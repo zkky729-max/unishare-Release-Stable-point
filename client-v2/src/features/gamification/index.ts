@@ -1,0 +1,1 @@
+export { default as GamificationPage } from "./pages/GamificationPage";

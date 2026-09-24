@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+
+/* =====================================================
+   UniShare — Visual Identity
+   ===================================================== */
+
+:root {
+  /* Brand Colors */
+  --unishare-blue: #3b82f6;
+  --unishare-indigo: #6366f1;
+  --unishare-purple: #7c3aed;
+  --unishare-cyan: #06b6d4;
+
+  /* Neutral Colors */
+  --unishare-navy: #0f172a;
+  --unishare-text: #1f2937;
+  --unishare-muted: #64748b;
+  --unishare-border: #e2e8f0;
+  --unishare-background: #f8fafc;
+  --unishare-white: #ffffff;
+
+  /* Brand Gradient */
+  --unishare-gradient: linear-gradient(
+    135deg,
+    #3b82f6 0%,
+    #6366f1 55%,
+    #06b6d4 100%
+  );
+
+  /* Soft Brand Gradient */
+  --unishare-gradient-soft: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.12),
+    rgba(99, 102, 241, 0.10),
+    rgba(6, 182, 212, 0.10)
+  );
+
+  /* Shadows */
+  --unishare-shadow: 0 10px 30px rgba(59, 130, 246, 0.12);
+}
+
+
+/* =====================================================
+   Base
+   ===================================================== */
+
+:root {
+  font-family: "Cairo", sans-serif;
+
+  color: var(--unishare-text);
+
+  background: var(--unishare-background);
+}
+
+
+html {
+  direction: rtl;
+  scroll-behavior: smooth;
+}
+
+
+body {
+  margin: 0;
+
+  min-width: 320px;
+
+  min-height: 100vh;
+
+  font-family: "Cairo", sans-serif;
+
+  background: var(--unishare-background);
+
+  color: var(--unishare-text);
+
+  -webkit-font-smoothing: antialiased;
+
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+#root {
+  min-height: 100vh;
+}
+
+
+/* =====================================================
+   Global Reset
+   ===================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+
+button {
+  font-family: inherit;
+
+  cursor: pointer;
+}
+
+
+a {
+  text-decoration: none;
+}
+
+
+/* =====================================================
+   UniShare Brand Utilities
+   ===================================================== */
+
+.unishare-gradient {
+  background: var(--unishare-gradient);
+}
+
+
+.unishare-gradient-text {
+  background: var(--unishare-gradient);
+
+  background-clip: text;
+  -webkit-background-clip: text;
+
+  color: transparent;
+}
+
+
+.unishare-soft {
+  background: var(--unishare-gradient-soft);
+}
+
+
+.unishare-shadow {
+  box-shadow: var(--unishare-shadow);
+}
