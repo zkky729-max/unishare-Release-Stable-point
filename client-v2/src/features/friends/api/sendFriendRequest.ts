@@ -27,7 +27,7 @@ export async function sendFriendRequest(
   }
 
   const response = await fetch(
-    "https://unishare-api-ivory.vercel.app/api/friends/requests",
+    `${import.meta.env.VITE_API_URL}/api/friends/requests`,
     {
       method: "POST",
       headers: {

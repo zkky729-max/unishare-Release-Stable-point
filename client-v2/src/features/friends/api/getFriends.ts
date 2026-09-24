@@ -36,7 +36,7 @@ export async function getFriends(): Promise<Friend[]> {
   }
 
   const response = await fetch(
-    "https://unishare-api-ivory.vercel.app/api/friends",
+    `${import.meta.env.VITE_API_URL}/api/friends`,
     {
       method: "GET",
       headers: {

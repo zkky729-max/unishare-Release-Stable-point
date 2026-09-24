@@ -27,7 +27,7 @@ export async function rejectFriendRequest(
   }
 
   const response = await fetch(
-    `https://unishare-api-ivory.vercel.app/api/friends/requests/${friendshipId}/reject`,
+    `${import.meta.env.VITE_API_URL}/api/friends/requests/${friendshipId}/reject`,
     {
       method: "PATCH",
       headers: {

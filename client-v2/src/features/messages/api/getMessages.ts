@@ -35,7 +35,7 @@ export async function getMessages(
   }
 
   const response = await fetch(
-    `https://unishare-api-ivory.vercel.app/api/messages/conversations/${conversationId}/messages`,
+    `${import.meta.env.VITE_API_URL}/api/messages/conversations/${conversationId}/messages`,
     {
       method: "GET",
       headers: {

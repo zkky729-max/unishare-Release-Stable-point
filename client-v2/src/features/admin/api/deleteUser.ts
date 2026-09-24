@@ -35,7 +35,7 @@ export async function deleteUser(
   }
 
   const response = await fetch(
-    `https://unishare-api-ivory.vercel.app/api/admin/users/${userId}`,
+    `${import.meta.env.VITE_API_URL}/api/admin/users/${userId}`,
     {
       method: "DELETE",
       headers: {

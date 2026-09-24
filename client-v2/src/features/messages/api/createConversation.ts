@@ -36,7 +36,7 @@ export async function createConversation(
   }
 
   const response = await fetch(
-    "https://unishare-api-ivory.vercel.app/api/messages/conversations",
+    `${import.meta.env.VITE_API_URL}/api/messages/conversations`,
     {
       method: "POST",
 

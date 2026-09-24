@@ -103,7 +103,7 @@ export async function searchUsers(
 
   const response =
     await fetch(
-      `https://unishare-api-ivory.vercel.app/api/friends/users/search?${params.toString()}`,
+      `${import.meta.env.VITE_API_URL}/api/friends/users/search?${params.toString()}`,
       {
         method: "GET",
 

@@ -94,8 +94,9 @@ export interface AdminLesson {
 // API BASE
 // =====================================================
 
-const API_BASE_URL =
-  "https://unishare-api-ivory.vercel.app/api/admin";
+const API_BASE_URL = `${
+  import.meta.env.VITE_API_URL
+}/api/admin`;
 
 // =====================================================
 // ACCESS TOKEN

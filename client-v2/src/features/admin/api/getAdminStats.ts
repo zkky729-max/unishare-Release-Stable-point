@@ -18,7 +18,7 @@ export interface AdminStats {
 }
 
 const API_BASE_URL =
-  "https://unishare-api-ivory.vercel.app/api/admin";
+  `${import.meta.env.VITE_API_URL}/api/admin`;
 
 async function getAccessToken(): Promise<string> {
   const {
