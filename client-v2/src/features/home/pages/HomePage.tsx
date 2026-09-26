@@ -22,10 +22,10 @@ export default function HomePage() {
       ===================================================== */}
 
       <header className="fixed inset-x-0 top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur">
-        <div className="relative mx-auto flex h-16 max-w-7xl items-center px-3 sm:h-20 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-3 sm:h-20 sm:px-6 lg:px-8">
           {/* أزرار الحساب */}
 
-          <div className="absolute left-3 z-20 flex items-center gap-1.5 sm:left-6 sm:gap-3 lg:left-8">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <button
               type="button"
               onClick={() => navigate("/login")}
@@ -43,18 +43,22 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* الشعار في المنتصف */}
+          {/* الشعار - يتمركز داخل المساحة المتبقية فقط، وليس عرض الصفحة كاملة */}
 
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-1 justify-center">
             <button
               type="button"
               onClick={() => navigate("/")}
               aria-label="UniShare"
-              className="pointer-events-auto relative z-30 flex scale-[0.55] items-center justify-center rounded-xl p-1 transition hover:scale-[0.58] sm:scale-100 sm:hover:scale-[1.02]"
+              className="flex scale-[0.55] items-center justify-center rounded-xl p-1 transition hover:scale-[0.58] sm:scale-100 sm:hover:scale-[1.02]"
             >
               <UniShareLogo />
             </button>
           </div>
+
+          {/* عنصر موازِن لعرض كتلة الأزرار، حتى يبقى الشعار في المنتصف الهندسي الحقيقي */}
+
+          <div className="w-0 sm:w-[110px]" aria-hidden="true" />
         </div>
       </header>
 
