@@ -112,13 +112,8 @@ export default function DepartmentDetailsPage() {
                 error: levelsError,
               } = await supabase
                 .from("levels")
-                .select(
-                  "id,name,specialty_id",
-                )
-                .eq(
-                  "specialty_id",
-                  specialty.id,
-                )
+                .select("id,name,specialty_id")
+                .eq("specialty_id", specialty.id)
                 .order("name", {
                   ascending: true,
                 });
@@ -129,8 +124,7 @@ export default function DepartmentDetailsPage() {
 
               return {
                 ...specialty,
-                levels:
-                  (data ?? []) as Level[],
+                levels: (data ?? []) as Level[],
               };
             },
           ),
@@ -138,38 +132,26 @@ export default function DepartmentDetailsPage() {
 
       // =====================================================
       // Group specialties by year
-      //
-      // Important:
-      // The same year is shown only once.
       // =====================================================
 
-      const groups =
-        new Map<
-          string,
-          YearGroup
-        >();
+      const groups = new Map<string, YearGroup>();
 
       for (const specialty of specialtiesWithLevels) {
         for (const level of specialty.levels) {
-          const yearName =
-            level.name.trim();
+          const yearName = level.name.trim();
 
           if (!yearName) {
             continue;
           }
 
           if (!groups.has(yearName)) {
-            groups.set(
-              yearName,
-              {
-                name: yearName,
-                specialties: [],
-              },
-            );
+            groups.set(yearName, {
+              name: yearName,
+              specialties: [],
+            });
           }
 
-          const group =
-            groups.get(yearName);
+          const group = groups.get(yearName);
 
           if (!group) {
             continue;
@@ -177,40 +159,32 @@ export default function DepartmentDetailsPage() {
 
           const alreadyExists =
             group.specialties.some(
-              (item) =>
-                item.id === specialty.id,
+              (item) => item.id === specialty.id,
             );
 
           if (!alreadyExists) {
-            group.specialties.push(
-              specialty,
-            );
+            group.specialties.push(specialty);
           }
         }
       }
 
       // =====================================================
-      // Sort years
-      //
-      // السنة الأولى
-      // السنة الثانية
-      // السنة الثالثة
+      // Sort years:
+      // 1. أولى ليسانس
+      // 2. ثانية ليسانس
+      // 3. ثالثة ليسانس
+      // 4. أولى ماستر
+      // 5. ثانية ماستر
       // =====================================================
 
       const sortedGroups =
         Array.from(groups.values()).sort(
           (a, b) => {
-            const aNumber =
-              extractYearNumber(a.name);
+            const aOrder = getYearOrder(a.name);
+            const bOrder = getYearOrder(b.name);
 
-            const bNumber =
-              extractYearNumber(b.name);
-
-            if (
-              aNumber !== null &&
-              bNumber !== null
-            ) {
-              return aNumber - bNumber;
+            if (aOrder !== bOrder) {
+              return aOrder - bOrder;
             }
 
             return a.name.localeCompare(
@@ -220,13 +194,8 @@ export default function DepartmentDetailsPage() {
           },
         );
 
-      setDepartment(
-        departmentData,
-      );
-
-      setYearGroups(
-        sortedGroups,
-      );
+      setDepartment(departmentData);
+      setYearGroups(sortedGroups);
     } catch (err) {
       console.error(
         "LOAD DEPARTMENT DETAILS ERROR:",
@@ -245,12 +214,8 @@ export default function DepartmentDetailsPage() {
 
   useEffect(() => {
     if (!id) {
-      setError(
-        "معرف القسم غير موجود.",
-      );
-
+      setError("معرف القسم غير موجود.");
       setLoading(false);
-
       return;
     }
 
@@ -317,9 +282,7 @@ export default function DepartmentDetailsPage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  navigate(-1)
-                }
+                onClick={() => navigate(-1)}
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
               >
                 <ArrowRight size={17} />
@@ -355,9 +318,7 @@ export default function DepartmentDetailsPage() {
 
             <button
               type="button"
-              onClick={() =>
-                navigate(-1)
-              }
+              onClick={() => navigate(-1)}
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white"
             >
               <ArrowRight size={18} />
@@ -384,32 +345,23 @@ export default function DepartmentDetailsPage() {
 
         <button
           type="button"
-          onClick={() =>
-            navigate(-1)
-          }
+          onClick={() => navigate(-1)}
           className="mb-6 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-slate-500 hover:bg-white hover:text-blue-600"
         >
           <ArrowRight size={18} />
-
           العودة إلى الأقسام
         </button>
 
-        {/* =================================================
-            Department Header
-        ================================================= */}
+        {/* Department Header */}
 
         <div className="mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-
           <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 px-6 py-10 text-white sm:px-10">
-
             <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10" />
 
             <div className="pointer-events-none absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-white/10" />
 
             <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-
               <div>
-
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15">
                   <Building2 size={32} />
                 </div>
@@ -427,11 +379,9 @@ export default function DepartmentDetailsPage() {
                     {department.description}
                   </p>
                 )}
-
               </div>
 
               <div className="flex w-fit items-center gap-3 rounded-2xl bg-white/15 px-5 py-4">
-
                 <GraduationCap size={24} />
 
                 <div>
@@ -443,16 +393,12 @@ export default function DepartmentDetailsPage() {
                     سنوات دراسية
                   </div>
                 </div>
-
               </div>
-
             </div>
           </div>
 
           <div className="px-6 py-5 sm:px-10">
-
             <div className="flex items-center gap-2 text-sm text-slate-500">
-
               <BookOpen
                 size={18}
                 className="text-indigo-500"
@@ -461,20 +407,14 @@ export default function DepartmentDetailsPage() {
               <span>
                 اختر السنة الدراسية لعرض التخصصات
               </span>
-
             </div>
-
           </div>
-
         </div>
 
-        {/* =================================================
-            No Years
-        ================================================= */}
+        {/* No Years */}
 
         {yearGroups.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
-
             <GraduationCap
               size={50}
               className="mx-auto mb-4 text-slate-300"
@@ -487,158 +427,116 @@ export default function DepartmentDetailsPage() {
             <p className="mt-2 text-sm leading-6 text-slate-500">
               لا توجد مستويات دراسية مرتبطة بتخصصات هذا القسم حاليًا.
             </p>
-
           </div>
         ) : (
-
           <div className="space-y-8">
+            {yearGroups.map((yearGroup) => (
+              <section
+                key={yearGroup.name}
+                className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+              >
+                {/* Year Header */}
 
-            {yearGroups.map(
-              (yearGroup) => (
+                <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-6 sm:px-8">
+                  <div className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
 
-                <section
-                  key={yearGroup.name}
-                  className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
-                >
+                  <div className="pointer-events-none absolute -bottom-12 right-20 h-32 w-32 rounded-full bg-white/10" />
 
-                  {/* =================================================
-                      Year Header
-                  ================================================= */}
-
-                  <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-6 sm:px-8">
-
-                    <div className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
-
-                    <div className="pointer-events-none absolute -bottom-12 right-20 h-32 w-32 rounded-full bg-white/10" />
-
-                    <div className="relative flex items-center justify-between gap-4">
-
-                      <div className="flex items-center gap-4">
-
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
-                          <GraduationCap
-                            size={28}
-                          />
-                        </div>
-
-                        <div>
-
-                          <p className="text-sm font-semibold text-white/75">
-                            السنة الدراسية
-                          </p>
-
-                          <h2 className="text-2xl font-black text-white sm:text-3xl">
-                            {yearGroup.name}
-                          </h2>
-
-                        </div>
-
+                  <div className="relative flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
+                        <GraduationCap size={28} />
                       </div>
 
-                      <div className="hidden rounded-xl bg-white/15 px-4 py-2 text-sm font-bold text-white sm:block">
-                        {yearGroup.specialties.length} تخصص
-                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-white/75">
+                          السنة الدراسية
+                        </p>
 
+                        <h2 className="text-2xl font-black text-white sm:text-3xl">
+                          {yearGroup.name}
+                        </h2>
+                      </div>
                     </div>
 
+                    <div className="hidden rounded-xl bg-white/15 px-4 py-2 text-sm font-bold text-white sm:block">
+                      {yearGroup.specialties.length} تخصص
+                    </div>
                   </div>
+                </div>
 
-                  {/* =================================================
-                      Specialties
-                  ================================================= */}
+                {/* Specialties */}
 
-                  <div className="p-5 sm:p-8">
+                <div className="p-5 sm:p-8">
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    {yearGroup.specialties.map(
+                      (specialty) => {
+                        const level =
+                          specialty.levels.find(
+                            (item) =>
+                              item.name.trim() ===
+                              yearGroup.name.trim(),
+                          );
 
-                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                        return (
+                          <button
+                            key={`${yearGroup.name}-${specialty.id}`}
+                            type="button"
+                            onClick={() => {
+                              if (!level) {
+                                return;
+                              }
 
-                      {yearGroup.specialties.map(
-                        (specialty) => {
+                              navigate(
+                                `/levels/${level.id}/semesters`,
+                              );
+                            }}
+                            className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 text-right shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl"
+                          >
+                            <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-blue-50 transition-transform duration-300 group-hover:scale-125" />
 
-                          const level =
-                            specialty.levels.find(
-                              (item) =>
-                                item.name.trim() ===
-                                yearGroup.name.trim(),
-                            );
-
-                          return (
-                            <button
-                              key={`${yearGroup.name}-${specialty.id}`}
-                              type="button"
-                              onClick={() => {
-
-                                if (!level) {
-                                  return;
-                                }
-
-                                navigate(
-                                  `/levels/${level.id}/semesters`,
-                                );
-                              }}
-                              className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 text-right shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl"
-                            >
-
-                              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-blue-50 transition-transform duration-300 group-hover:scale-125" />
-
-                              <div className="relative">
-
-                                <div className="mb-5 flex items-center justify-between">
-
-                                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-cyan-500 text-white shadow-lg">
-                                    <BookOpen
-                                      size={27}
-                                    />
-                                  </div>
-
-                                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition group-hover:bg-blue-50 group-hover:text-blue-600">
-                                    <ArrowRight
-                                      size={20}
-                                    />
-                                  </div>
-
+                            <div className="relative">
+                              <div className="mb-5 flex items-center justify-between">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-cyan-500 text-white shadow-lg">
+                                  <BookOpen size={27} />
                                 </div>
 
-                                <h3 className="mb-3 text-xl font-black text-slate-900">
-                                  {specialty.name}
-                                </h3>
-
-                                {specialty.description && (
-                                  <p className="mb-5 line-clamp-2 text-sm leading-6 text-slate-500">
-                                    {specialty.description}
-                                  </p>
-                                )}
-
-                                <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
-
-                                  <GraduationCap
-                                    size={17}
-                                    className="text-indigo-500"
-                                  />
-
-                                  <span>
-                                    عرض السداسيات
-                                  </span>
-
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition group-hover:bg-blue-50 group-hover:text-blue-600">
+                                  <ArrowRight size={20} />
                                 </div>
-
                               </div>
 
-                            </button>
-                          );
-                        },
-                      )}
+                              <h3 className="mb-3 text-xl font-black text-slate-900">
+                                {specialty.name}
+                              </h3>
 
-                    </div>
+                              {specialty.description && (
+                                <p className="mb-5 line-clamp-2 text-sm leading-6 text-slate-500">
+                                  {specialty.description}
+                                </p>
+                              )}
 
+                              <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
+                                <GraduationCap
+                                  size={17}
+                                  className="text-indigo-500"
+                                />
+
+                                <span>
+                                  عرض السداسيات
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      },
+                    )}
                   </div>
-
-                </section>
-              ),
-            )}
-
+                </div>
+              </section>
+            ))}
           </div>
         )}
-
       </div>
     </div>
   );
@@ -648,33 +546,34 @@ export default function DepartmentDetailsPage() {
 // Helpers
 // =====================================================
 
-function extractYearNumber(
-  name: string,
-): number | null {
-  const normalized =
-    name
-      .trim()
-      .replace(/[٠-٩]/g, (digit) =>
-        String(
-          "٠١٢٣٤٥٦٧٨٩".indexOf(
-            digit,
-          ),
-        ),
-      );
+function getYearOrder(name: string): number {
+  const normalized = name
+    .trim()
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670]/g, "")
+    .replace(/ـ/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ى/g, "ي");
 
-  const match =
-    normalized.match(
-      /(\d+)/,
-    );
+  const isMaster =
+    normalized.includes("ماستر") ||
+    normalized.includes("master");
 
-  if (!match) {
-    return null;
+  let yearNumber = 99;
+
+  if (/اولى|الاولى|اول|الاول/.test(normalized)) {
+    yearNumber = 1;
+  } else if (/ثانيه|الثانيه|ثاني|الثاني/.test(normalized)) {
+    yearNumber = 2;
+  } else if (/ثالثه|الثالثه|ثالث|الثالث/.test(normalized)) {
+    yearNumber = 3;
   }
 
-  const number =
-    Number(match[1]);
+  if (yearNumber === 99) {
+    return 99;
+  }
 
-  return Number.isNaN(number)
-    ? null
-    : number;
+  return isMaster
+    ? yearNumber + 3
+    : yearNumber;
 }
