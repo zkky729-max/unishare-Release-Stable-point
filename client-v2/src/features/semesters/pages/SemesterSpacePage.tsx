@@ -953,7 +953,7 @@ function SemesterSpacePageContent() {
                                         size={15}
                                       />
 
-                                      <span className="hidden sm:inline">
+                                      <span className="inline">
                                         الدروس
                                       </span>
                                     </button>

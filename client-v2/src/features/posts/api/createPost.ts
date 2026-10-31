@@ -159,6 +159,7 @@ export async function createPost({
   } = await supabase
     .from("profiles")
     .select(`
+      role,
       faculty_id,
       specialty_id
     `)
@@ -180,6 +181,22 @@ export async function createPost({
   if (!profile) {
     throw new Error(
       "لم يتم العثور على الملف الشخصي."
+    );
+  }
+
+  // ===================================================
+  // 5.1. Validate Academic Publishing Permission
+  // ===================================================
+
+  const isAcademicPost = Boolean(academicType);
+
+  const canPublishAcademic =
+    profile.role === "admin" ||
+    profile.role === "teacher";
+
+  if (isAcademicPost && !canPublishAcademic) {
+    throw new Error(
+      "ليس لديك صلاحية نشر المحتوى الأكاديمي. النشر متاح للإدارة والأساتذة فقط."
     );
   }
 
