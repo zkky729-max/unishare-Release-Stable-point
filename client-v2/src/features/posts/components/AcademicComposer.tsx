@@ -255,7 +255,7 @@ export default function AcademicComposer({
           error: profileError,
         } = await supabase
           .from("profiles")
-          .select("specialty_id")
+          .select("specialty_id, role")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -269,7 +269,9 @@ export default function AcademicComposer({
           );
         }
 
-        if (!profile.specialty_id) {
+        // الأدمن لا يحتاج إلى تخصص محدد لأنه يستطيع النشر
+        // في جميع التخصصات والسداسيات.
+        if (profile.role !== "admin" && !profile.specialty_id) {
           throw new Error(
             "لم يتم تحديد تخصصك في الملف الشخصي."
           );
@@ -341,8 +343,8 @@ export default function AcademicComposer({
         // ---------------------------------------------
 
         if (
-          profile.specialty_id !==
-          semesterSpecialtyId
+          profile.role !== "admin" &&
+          profile.specialty_id !== semesterSpecialtyId
         ) {
           setSemesterValid(false);
 
@@ -425,8 +427,7 @@ export default function AcademicComposer({
           .order("name", {
             ascending: true,
           });
-
-        if (modulesError) {
+                  if (modulesError) {
           throw modulesError;
         }
 
@@ -1306,8 +1307,7 @@ export default function AcademicComposer({
             </div>
           </div>
         </div>
-
-        {/* =================================================
+                {/* =================================================
             Post Type
         ================================================= */}
 
@@ -1986,5 +1986,6 @@ function ImagePreview({
         <X size={14} />
       </button>
     </div>
-  );
+    );
 }
+

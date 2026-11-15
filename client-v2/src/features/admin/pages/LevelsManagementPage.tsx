@@ -14,6 +14,85 @@ import {
   type AdminSpecialty,
 } from "../api/adminAcademic";
 
+/**
+ * ترتيب السنوات حسب النظام الجامعي:
+ * ليسانس 1، 2، 3 ثم ماستر 1، 2.
+ * الأسماء غير المعروفة تبقى بعد الأسماء المعروفة مع الحفاظ على ترتيبها الأصلي.
+ */
+function getAcademicLevelOrder(name: string) {
+  const normalized = name
+    .normalize("NFD")
+    .replace(/[\u064B-\u065F\u0670]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .toLowerCase()
+    .replace(/[ـ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const isLicence =
+    normalized.includes("ليسانس") ||
+    normalized.includes("licence") ||
+    normalized.includes("license");
+
+  const isMaster =
+    normalized.includes("ماستر") ||
+    normalized.includes("master");
+
+  let degreeOrder = 2;
+  if (isLicence) degreeOrder = 0;
+  else if (isMaster) degreeOrder = 1;
+
+  let yearOrder = 99;
+
+  if (
+    /\b(?:l|licence|license)\s*1\b/.test(normalized) ||
+    /\b(?:m|master)\s*1\b/.test(normalized) ||
+    /(?:^|\s)(?:ال)?اول(?:ي|ى)?(?:ة)?(?:\s|$)/.test(normalized) ||
+    normalized.includes("الاولى") ||
+    normalized.includes("اولى")
+  ) {
+    yearOrder = 1;
+  } else if (
+    /\b(?:l|licence|license)\s*2\b/.test(normalized) ||
+    /\b(?:m|master)\s*2\b/.test(normalized) ||
+    normalized.includes("الثانية") ||
+    normalized.includes("ثانيه") ||
+    normalized.includes("ثانية")
+  ) {
+    yearOrder = 2;
+  } else if (
+    /\b(?:l|licence|license)\s*3\b/.test(normalized) ||
+    normalized.includes("الثالثة") ||
+    normalized.includes("ثالثه") ||
+    normalized.includes("ثالثة")
+  ) {
+    yearOrder = 3;
+  } else if (
+    normalized.includes("الرابعة") ||
+    normalized.includes("رابعة")
+  ) {
+    yearOrder = 4;
+  } else if (
+    normalized.includes("الخامسة") ||
+    normalized.includes("خامسة")
+  ) {
+    yearOrder = 5;
+  }
+
+  return { degreeOrder, yearOrder };
+}
+
+function compareAcademicLevels(a: AdminLevel, b: AdminLevel) {
+  const orderA = getAcademicLevelOrder(a.name);
+  const orderB = getAcademicLevelOrder(b.name);
+
+  return (
+    orderA.degreeOrder - orderB.degreeOrder ||
+    orderA.yearOrder - orderB.yearOrder
+  );
+}
+
 export default function LevelsManagementPage() {
   const [faculties, setFaculties] = useState<
     AdminFaculty[]
@@ -298,6 +377,9 @@ export default function LevelsManagementPage() {
       (specialty) =>
         specialty.id === selectedSpecialtyId
     );
+
+  // ترتيب العرض فقط؛ لا يتم تغيير أو تحديث أي بيانات في قاعدة البيانات.
+  const sortedLevels = [...levels].sort(compareAcademicLevels);
 
   /* =====================================================
      RENDER
@@ -621,7 +703,7 @@ export default function LevelsManagementPage() {
             /* List */
 
             <div className="divide-y">
-              {levels.map((level) => (
+              {sortedLevels.map((level) => (
                 <div
                   key={level.id}
                   className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between"
