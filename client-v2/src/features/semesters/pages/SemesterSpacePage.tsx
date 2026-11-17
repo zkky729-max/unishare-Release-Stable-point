@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
@@ -900,7 +900,7 @@ function SemesterSpacePageContent() {
                                     key={
                                       subject.id
                                     }
-                                    className="group/subject flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm transition-all duration-200 hover:border-indigo-100 hover:bg-indigo-50/40 hover:shadow-md"
+                                    className="group/subject flex min-w-0 flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm transition-all duration-200 hover:border-indigo-100 hover:bg-indigo-50/40 hover:shadow-md sm:flex-row sm:items-center"
                                   >
 
                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-50 to-indigo-50 text-indigo-600">
