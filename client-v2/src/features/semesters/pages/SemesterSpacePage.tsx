@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
@@ -913,14 +913,14 @@ function SemesterSpacePageContent() {
 
                                     <div className="min-w-0 flex-1">
 
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex min-w-0 flex-1 items-center gap-2">
 
                                         <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-slate-100 px-1.5 text-[9px] font-black text-slate-500">
                                           {subjectIndex +
                                             1}
                                         </span>
 
-                                        <h4 className="truncate text-sm font-black text-slate-800">
+                                        <h4 className="min-w-0 flex-1 truncate text-sm font-black text-slate-800">
                                           {
                                             subject.name
                                           }
