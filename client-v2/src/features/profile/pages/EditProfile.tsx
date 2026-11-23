@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../../lib/supabaseClient";
 
@@ -9,6 +10,7 @@ interface Item {
 
 export default function EditProfile() {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
 
@@ -22,6 +24,7 @@ export default function EditProfile() {
 
   const [avatar, setAvatar] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
+  const [selectedFileName, setSelectedFileName] = useState("");
 
   const [faculties, setFaculties] = useState<Item[]>([]);
   const [specialties, setSpecialties] = useState<Item[]>([]);
@@ -80,6 +83,24 @@ export default function EditProfile() {
     setFaculties(data || []);
   }
 
+  function handleAvatarChange(
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("يرجى اختيار ملف صورة صالح.");
+      e.target.value = "";
+      return;
+    }
+
+    setAvatar(file);
+    setSelectedFileName(file.name);
+    setPreview(URL.createObjectURL(file));
+  }
+
   async function saveProfile() {
     setLoading(true);
 
@@ -95,19 +116,15 @@ export default function EditProfile() {
 
     let avatarUrl = preview;
 
-    // =====================================================
-    // رفع صورة البروفايل
-    // =====================================================
+    // Upload profile picture
 
     if (avatar) {
-      // نأخذ امتداد الصورة فقط
       const extension =
         avatar.name.split(".").pop()?.toLowerCase() || "jpg";
 
-      // اسم آمن لا يحتوي على الاسم الأصلي للملف
-      const fileName = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+      const fileName =
+        `${Date.now()}-${crypto.randomUUID()}.${extension}`;
 
-      // تنظيم الصور داخل مجلد خاص بالمستخدم
       const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -129,9 +146,7 @@ export default function EditProfile() {
         .getPublicUrl(filePath).data.publicUrl;
     }
 
-    // =====================================================
-    // تحديث الملف الشخصي
-    // =====================================================
+    // Update profile
 
     const { error } = await supabase
       .from("profiles")
@@ -154,7 +169,7 @@ export default function EditProfile() {
       return;
     }
 
-    alert("تم تحديث الملف الشخصي بنجاح");
+    alert("تم تحديث الملف الشخصي بنجاح.");
 
     navigate("/profile");
   }
@@ -162,54 +177,92 @@ export default function EditProfile() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <h1 className="text-3xl font-bold">
-        ✏️ تعديل الملف الشخصي
+        تعديل الملف الشخصي
       </h1>
 
-      <div className="space-y-4 rounded-2xl bg-white p-6 shadow">
+      <div className="space-y-4 rounded-2xl bg-white p-6 shadow dark:bg-slate-900">
 
-        {/* =====================================================
-            صورة البروفايل
-        ===================================================== */}
+        {/* Profile Picture */}
 
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-4">
           <img
             src={preview || "/avatars/default.png"}
-            className="h-32 w-32 rounded-full border object-cover"
+            alt="الصورة الشخصية"
+            className="
+              h-32
+              w-32
+              rounded-full
+              border
+              border-slate-200
+              object-cover
+              dark:border-slate-700
+            "
             onError={(e) => {
               e.currentTarget.src = "/avatars/default.png";
             }}
           />
+
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="
+                inline-flex
+                items-center
+                justify-center
+                gap-2
+                rounded-xl
+                bg-blue-600
+                px-6
+                py-3
+                text-sm
+                font-semibold
+                text-white
+                shadow-sm
+                transition
+                hover:bg-blue-700
+              "
+            >
+              📷 Choisir une photo
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={handleAvatarChange}
+            />
+
+            {selectedFileName && (
+              <p
+                dir="auto"
+                className="max-w-64 truncate text-xs text-slate-500"
+              >
+                {selectedFileName}
+              </p>
+            )}
+
+            <p className="text-xs text-slate-500">
+              اختر صورة شخصية جديدة
+            </p>
+          </div>
         </div>
 
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-
-            if (!file) return;
-
-            setAvatar(file);
-            setPreview(URL.createObjectURL(file));
-          }}
-        />
-
-        {/* =====================================================
-            المعلومات الشخصية
-        ===================================================== */}
+        {/* Personal Information */}
 
         <input
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           placeholder="الاسم الكامل"
-          className="w-full rounded-xl border p-3"
+          className="w-full rounded-xl border p-3 dark:border-slate-700 dark:bg-slate-800"
         />
 
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="اسم المستخدم"
-          className="w-full rounded-xl border p-3"
+          className="w-full rounded-xl border p-3 dark:border-slate-700 dark:bg-slate-800"
         />
 
         <textarea
@@ -217,7 +270,7 @@ export default function EditProfile() {
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           placeholder="نبذة عنك"
-          className="w-full rounded-xl border p-3"
+          className="w-full rounded-xl border p-3 dark:border-slate-700 dark:bg-slate-800"
         />
 
         <input
@@ -225,12 +278,10 @@ export default function EditProfile() {
           value={age}
           onChange={(e) => setAge(e.target.value)}
           placeholder="العمر"
-          className="w-full rounded-xl border p-3"
+          className="w-full rounded-xl border p-3 dark:border-slate-700 dark:bg-slate-800"
         />
 
-        {/* =====================================================
-            الكلية
-        ===================================================== */}
+        {/* Faculty */}
 
         <select
           value={facultyId}
@@ -239,7 +290,7 @@ export default function EditProfile() {
             setSpecialtyId("");
             loadSpecialties(e.target.value);
           }}
-          className="w-full rounded-xl border p-3"
+          className="w-full rounded-xl border p-3 dark:border-slate-700 dark:bg-slate-800"
         >
           <option value="">
             اختر الكلية
@@ -255,15 +306,13 @@ export default function EditProfile() {
           ))}
         </select>
 
-        {/* =====================================================
-            التخصص
-        ===================================================== */}
+        {/* Specialty */}
 
         <select
           value={specialtyId}
           disabled={!facultyId}
           onChange={(e) => setSpecialtyId(e.target.value)}
-          className="w-full rounded-xl border p-3"
+          className="w-full rounded-xl border p-3 dark:border-slate-700 dark:bg-slate-800"
         >
           <option value="">
             اختر التخصص
@@ -279,16 +328,28 @@ export default function EditProfile() {
           ))}
         </select>
 
-        {/* =====================================================
-            حفظ
-        ===================================================== */}
+        {/* Save */}
 
         <button
+          type="button"
           onClick={saveProfile}
           disabled={loading}
-          className="w-full rounded-xl bg-blue-600 py-3 font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="
+            w-full
+            rounded-xl
+            bg-blue-600
+            py-3
+            font-bold
+            text-white
+            transition
+            hover:bg-blue-700
+            disabled:cursor-not-allowed
+            disabled:opacity-60
+          "
         >
-          {loading ? "جاري الحفظ..." : "💾 حفظ التعديلات"}
+          {loading
+            ? "جارٍ الحفظ..."
+            : "💾 حفظ التعديلات"}
         </button>
 
       </div>

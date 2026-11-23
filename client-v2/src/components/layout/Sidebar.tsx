@@ -49,12 +49,8 @@ export default function Sidebar() {
 
   const roleLabel =
     profile?.role === "elite_student"
-      ? "طالب متميز ⭐"
-      : profile?.role === "professor"
-        ? "أستاذ 🎓"
-        : profile?.role === "admin"
-          ? "مدير النظام 🛡️"
-          : "طالب";
+      ? "طالب متميز"
+      : "طالب";
 
   // =====================================================
   // Logout
@@ -523,19 +519,19 @@ export default function Sidebar() {
                     w-10
                     items-center
                     justify-center
-                    overflow-hidden
                     rounded-xl
-                    bg-white
+                    bg-blue-600
+                    text-2xl
+                    font-bold
+                    leading-none
+                    text-white
                     ring-2
                     ring-white
-                    dark:bg-slate-800
                     dark:ring-slate-800
                   "
+                  aria-label="الصورة الشخصية الافتراضية"
                 >
-                  <UniShareLogo
-                    showText={false}
-                    compact
-                  />
+                  ?
                 </div>
               )}
 
