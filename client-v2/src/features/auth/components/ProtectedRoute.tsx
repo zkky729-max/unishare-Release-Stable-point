@@ -1,3 +1,4 @@
+
 import {
   Navigate,
   Outlet,
@@ -23,10 +24,7 @@ export default function ProtectedRoute({
     loading,
   } = useAuth();
 
-  // =====================================================
   // انتظار تحميل حالة المصادقة
-  // =====================================================
-
   if (loading) {
     return (
       <div
@@ -44,10 +42,7 @@ export default function ProtectedRoute({
     );
   }
 
-  // =====================================================
   // غير مسجل الدخول
-  // =====================================================
-
   if (!user) {
     return (
       <Navigate
@@ -60,10 +55,7 @@ export default function ProtectedRoute({
     );
   }
 
-  // =====================================================
   // لا يوجد Profile
-  // =====================================================
-
   if (!profile) {
     return (
       <Navigate
@@ -73,10 +65,23 @@ export default function ProtectedRoute({
     );
   }
 
-  // =====================================================
-  // التحقق من الصلاحيات
-  // =====================================================
+  // التحقق من اكتمال البيانات الجامعية
+  const profileIncomplete =
+    !profile.username?.trim() ||
+    !profile.age ||
+    !profile.faculty_id ||
+    !profile.specialty_id;
 
+  if (profileIncomplete) {
+    return (
+      <Navigate
+        to="/complete-profile"
+        replace
+      />
+    );
+  }
+
+  // التحقق من الصلاحيات
   if (
     roles &&
     roles.length > 0 &&
@@ -90,9 +95,6 @@ export default function ProtectedRoute({
     );
   }
 
-  // =====================================================
   // السماح بالدخول
-  // =====================================================
-
   return <Outlet />;
 }

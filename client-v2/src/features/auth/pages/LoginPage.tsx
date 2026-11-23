@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Eye,
@@ -24,6 +25,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const [error, setError] = useState("");
 
@@ -35,12 +37,11 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const {
-      error,
-    } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
     if (error) {
       setError(
@@ -48,11 +49,31 @@ export default function LoginPage() {
       );
 
       setLoading(false);
-
       return;
     }
 
     navigate("/dashboard");
+  }
+
+  async function handleGoogleLogin() {
+    setError("");
+    setGoogleLoading(true);
+
+    const { error } =
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+    if (error) {
+      setError(
+        "تعذر تسجيل الدخول باستخدام Google. حاول مرة أخرى."
+      );
+
+      setGoogleLoading(false);
+    }
   }
 
   return (
@@ -221,7 +242,7 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || googleLoading}
           className="
             w-full
             flex
@@ -244,7 +265,6 @@ export default function LoginPage() {
                 size={20}
                 className="animate-spin"
               />
-
               جاري الدخول...
             </>
           ) : (
@@ -252,6 +272,54 @@ export default function LoginPage() {
           )}
         </button>
       </form>
+
+      {/* Separator */}
+
+      <div className="flex items-center gap-3 my-6">
+        <div className="flex-1 border-t border-gray-200" />
+        <span className="text-sm text-gray-400">
+          أو
+        </span>
+        <div className="flex-1 border-t border-gray-200" />
+      </div>
+
+      {/* Google Login */}
+
+      <button
+        type="button"
+        onClick={handleGoogleLogin}
+        disabled={loading || googleLoading}
+        className="
+          w-full
+          flex
+          justify-center
+          items-center
+          gap-3
+          rounded-xl
+          border
+          border-gray-300
+          bg-white
+          hover:bg-gray-50
+          text-gray-700
+          py-3
+          font-semibold
+          transition
+          disabled:opacity-50
+        "
+      >
+        {googleLoading ? (
+          <Loader2
+            size={20}
+            className="animate-spin"
+          />
+        ) : (
+          <span className="text-xl font-bold">
+            <span className="text-blue-500">G</span>
+          </span>
+        )}
+
+        المتابعة باستخدام Google
+      </button>
 
       <p
         className="
