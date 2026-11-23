@@ -1,3 +1,4 @@
+
 import {
   NavLink,
   useNavigate,
@@ -40,8 +41,7 @@ export default function Sidebar() {
     "مستخدم";
 
   const avatar =
-    profile?.avatar_url?.trim() ||
-    "/avatars/default.png";
+    profile?.avatar_url?.trim() || null;
 
   // =====================================================
   // Role Label
@@ -142,17 +142,10 @@ export default function Sidebar() {
             "font-medium",
             "transition-all",
             "duration-200",
-
-            // إزالة تأثيرات المتصفح عند الضغط
             "outline-none",
             "focus:outline-none",
             "focus-visible:outline-none",
             "[-webkit-tap-highlight-color:transparent]",
-
-            // =================================================
-            // Active state
-            // =================================================
-
             isActive
               ? [
                   "text-white",
@@ -160,16 +153,10 @@ export default function Sidebar() {
                   "shadow-md",
                   "shadow-blue-500/20",
                 ].join(" ")
-
-              // =================================================
-              // Normal state
-              // =================================================
-
               : [
                   "text-slate-600",
                   "hover:bg-blue-50/70",
                   "hover:text-[var(--unishare-blue)]",
-
                   "dark:text-slate-300",
                   "dark:hover:bg-slate-900",
                   "dark:hover:text-blue-400",
@@ -179,10 +166,6 @@ export default function Sidebar() {
       >
         {({ isActive }) => (
           <>
-            {/* =================================================
-                Icon
-            ================================================= */}
-
             <div
               className={[
                 "flex",
@@ -194,7 +177,6 @@ export default function Sidebar() {
                 "rounded-lg",
                 "transition-colors",
                 "duration-200",
-
                 isActive
                   ? "bg-white/15"
                   : [
@@ -207,30 +189,19 @@ export default function Sidebar() {
             >
               <Icon
                 size={19}
-                strokeWidth={
-                  isActive ? 2.3 : 2
-                }
+                strokeWidth={isActive ? 2.3 : 2}
               />
             </div>
-
-            {/* =================================================
-                Label
-            ================================================= */}
 
             <span className="flex-1">
               {name}
             </span>
-
-            {/* =================================================
-                Arrow
-            ================================================= */}
 
             <ChevronLeft
               size={16}
               className={[
                 "transition-all",
                 "duration-200",
-
                 isActive
                   ? "opacity-100"
                   : [
@@ -269,9 +240,7 @@ export default function Sidebar() {
         dark:bg-slate-950
       "
     >
-      {/* =====================================================
-          Brand
-      ===================================================== */}
+      {/* Brand */}
 
       <div
         className="
@@ -284,8 +253,6 @@ export default function Sidebar() {
           dark:border-slate-800
         "
       >
-        {/* Decorative glow */}
-
         <div
           className="
             pointer-events-none
@@ -305,9 +272,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* =====================================================
-          Navigation
-      ===================================================== */}
+      {/* Navigation */}
 
       <nav
         aria-label="التنقل الرئيسي"
@@ -318,8 +283,6 @@ export default function Sidebar() {
           py-6
         "
       >
-        {/* Section title */}
-
         <p
           className="
             mb-3
@@ -335,20 +298,11 @@ export default function Sidebar() {
         </p>
 
         <div className="space-y-1.5">
-
-          {/* =================================================
-              Dashboard
-          ================================================= */}
-
           {renderNavItem(
             links[0].path,
             links[0].name,
             links[0].icon
           )}
-
-          {/* =================================================
-              Universities
-          ================================================= */}
 
           {renderNavItem(
             links[1].path,
@@ -356,9 +310,7 @@ export default function Sidebar() {
             links[1].icon
           )}
 
-          {/* =================================================
-              My Faculty
-          ================================================= */}
+          {/* My Faculty */}
 
           {profile?.faculty_id ? (
             <NavLink
@@ -376,13 +328,10 @@ export default function Sidebar() {
                   "font-medium",
                   "transition-all",
                   "duration-200",
-
-                  // منع تأثير الضغط الافتراضي
                   "outline-none",
                   "focus:outline-none",
                   "focus-visible:outline-none",
                   "[-webkit-tap-highlight-color:transparent]",
-
                   isActive
                     ? [
                         "text-white",
@@ -390,12 +339,10 @@ export default function Sidebar() {
                         "shadow-md",
                         "shadow-blue-500/20",
                       ].join(" ")
-
                     : [
                         "text-slate-600",
                         "hover:bg-blue-50/70",
                         "hover:text-[var(--unishare-blue)]",
-
                         "dark:text-slate-300",
                         "dark:hover:bg-slate-900",
                         "dark:hover:text-blue-400",
@@ -405,8 +352,6 @@ export default function Sidebar() {
             >
               {({ isActive }) => (
                 <>
-                  {/* Faculty icon */}
-
                   <div
                     className={[
                       "flex",
@@ -418,7 +363,6 @@ export default function Sidebar() {
                       "rounded-lg",
                       "transition-colors",
                       "duration-200",
-
                       isActive
                         ? "bg-white/15"
                         : [
@@ -431,26 +375,19 @@ export default function Sidebar() {
                   >
                     <GraduationCap
                       size={19}
-                      strokeWidth={
-                        isActive ? 2.3 : 2
-                      }
+                      strokeWidth={isActive ? 2.3 : 2}
                     />
                   </div>
-
-                  {/* Faculty label */}
 
                   <span className="flex-1">
                     كليتي
                   </span>
-
-                  {/* Arrow */}
 
                   <ChevronLeft
                     size={16}
                     className={[
                       "transition-all",
                       "duration-200",
-
                       isActive
                         ? "opacity-100"
                         : [
@@ -482,12 +419,9 @@ export default function Sidebar() {
             </div>
           )}
 
-          {/* =================================================
-              Social
-          ================================================= */}
+          {/* Social */}
 
           <div className="space-y-1.5 pt-2">
-
             {renderNavItem(
               links[2].path,
               links[2].name,
@@ -505,29 +439,21 @@ export default function Sidebar() {
               links[4].name,
               links[4].icon
             )}
-
           </div>
 
-          {/* =================================================
-              Profile
-          ================================================= */}
+          {/* Profile */}
 
           <div className="pt-2">
-
             {renderNavItem(
               links[5].path,
               links[5].name,
               links[5].icon
             )}
-
           </div>
-
         </div>
       </nav>
 
-      {/* =====================================================
-          User Card
-      ===================================================== */}
+      {/* User Card */}
 
       <div
         className="
@@ -548,8 +474,6 @@ export default function Sidebar() {
             dark:bg-slate-900
           "
         >
-          {/* User */}
-
           <button
             type="button"
             onClick={() => navigate("/profile")}
@@ -574,26 +498,46 @@ export default function Sidebar() {
             {/* Avatar */}
 
             <div className="relative shrink-0">
-
-              <img
-                src={avatar}
-                alt={displayName}
-                onError={(event) => {
-                  event.currentTarget.src =
-                    "/avatars/default.png";
-                }}
-                className="
-                  h-10
-                  w-10
-                  rounded-xl
-                  object-cover
-                  ring-2
-                  ring-white
-                  dark:ring-slate-800
-                "
-              />
-
-              {/* Online indicator */}
+              {avatar ? (
+                <img
+                  src={avatar}
+                  alt={displayName}
+                  className="
+                    h-10
+                    w-10
+                    rounded-xl
+                    object-cover
+                    ring-2
+                    ring-white
+                    dark:ring-slate-800
+                  "
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : (
+                <div
+                  className="
+                    flex
+                    h-10
+                    w-10
+                    items-center
+                    justify-center
+                    overflow-hidden
+                    rounded-xl
+                    bg-white
+                    ring-2
+                    ring-white
+                    dark:bg-slate-800
+                    dark:ring-slate-800
+                  "
+                >
+                  <UniShareLogo
+                    showText={false}
+                    compact
+                  />
+                </div>
+              )}
 
               <span
                 className="
@@ -608,17 +552,11 @@ export default function Sidebar() {
                   ring-[var(--unishare-background)]
                 "
               />
-
             </div>
 
-            {/* User info */}
+            {/* User Info */}
 
-            <div
-              className="
-                min-w-0
-                flex-1
-              "
-            >
+            <div className="min-w-0 flex-1">
               <p
                 className="
                   truncate
@@ -644,9 +582,7 @@ export default function Sidebar() {
             </div>
           </button>
 
-          {/* =================================================
-              Logout
-          ================================================= */}
+          {/* Logout */}
 
           <button
             type="button"
@@ -674,11 +610,9 @@ export default function Sidebar() {
               focus-visible:outline-none
               active:outline-none
               [-webkit-tap-highlight-color:transparent]
-
               hover:border-red-200
               hover:bg-red-50
               hover:text-red-600
-
               dark:border-slate-700
               dark:bg-slate-950
               dark:text-slate-300
@@ -688,7 +622,6 @@ export default function Sidebar() {
             "
           >
             <LogOut size={17} />
-
             تسجيل الخروج
           </button>
         </div>
