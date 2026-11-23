@@ -1,3 +1,4 @@
+
 export interface University {
   id: string;
   name: string;
@@ -7,4 +8,14 @@ export interface University {
   city: string | null;
   logo_url: string | null;
   created_at?: string;
+
+  // Additional university information
+  description: string | null;
+  cover_image_url: string | null;
+  founded_year: number | null;
+  website_url: string | null;
+  official_email: string | null;
+  phone: string | null;
+  address: string | null;
+  institution_type: string | null;
 }

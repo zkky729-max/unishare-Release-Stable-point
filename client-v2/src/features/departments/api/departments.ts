@@ -1,9 +1,10 @@
+
 import { supabase } from "../../../lib/supabaseClient";
 
-import type { Department } from "../types";
+import type { Department } from "../../departments/types";
 
 // =====================================================
-// Get departments by faculty
+// Get departments by faculty with specialties count
 // =====================================================
 
 export async function getDepartmentsByFaculty(
@@ -11,7 +12,10 @@ export async function getDepartmentsByFaculty(
 ): Promise<Department[]> {
   const { data, error } = await supabase
     .from("departments")
-    .select("*")
+    .select(`
+      *,
+      specialties(count)
+    `)
     .eq("faculty_id", facultyId)
     .order("name", { ascending: true });
 
@@ -20,7 +24,11 @@ export async function getDepartmentsByFaculty(
     throw error;
   }
 
-  return (data ?? []) as Department[];
+  return (data ?? []).map((department: any) => ({
+    ...department,
+    specialties_count:
+      department.specialties?.[0]?.count ?? 0,
+  })) as Department[];
 }
 
 // =====================================================

@@ -1,3 +1,4 @@
+
 import {
   ArrowRight,
   Building2,
@@ -35,9 +36,7 @@ export default function DepartmentsPage() {
   ] = useSearchParams();
 
   const facultyId =
-    searchParams.get(
-      "facultyId",
-    );
+    searchParams.get("facultyId");
 
   const [
     departments,
@@ -52,9 +51,7 @@ export default function DepartmentsPage() {
   const [
     error,
     setError,
-  ] = useState<string | null>(
-    null,
-  );
+  ] = useState<string | null>(null);
 
   // =================================================
   // Load Departments
@@ -62,9 +59,7 @@ export default function DepartmentsPage() {
 
   async function loadDepartments() {
     if (!facultyId) {
-      setError(
-        "لم يتم تحديد الكلية.",
-      );
+      setError("لم يتم تحديد الكلية.");
 
       setDepartments([]);
       setLoading(false);
@@ -81,9 +76,7 @@ export default function DepartmentsPage() {
           facultyId,
         );
 
-      setDepartments(
-        data ?? [],
-      );
+      setDepartments(data ?? []);
     } catch (err) {
       console.error(
         "LOAD DEPARTMENTS ERROR:",
@@ -116,9 +109,7 @@ export default function DepartmentsPage() {
   const filteredDepartments =
     useMemo(() => {
       const value =
-        search
-          .trim()
-          .toLowerCase();
+        search.trim().toLowerCase();
 
       if (!value) {
         return departments;
@@ -196,9 +187,7 @@ export default function DepartmentsPage() {
 
             <button
               type="button"
-              onClick={() =>
-                navigate(-1)
-              }
+              onClick={() => navigate(-1)}
               className="
                 mt-6
                 inline-flex
@@ -367,9 +356,7 @@ export default function DepartmentsPage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  navigate(-1)
-                }
+                onClick={() => navigate(-1)}
                 className="
                   inline-flex
                   items-center
@@ -415,15 +402,11 @@ export default function DepartmentsPage() {
     >
       <div className="mx-auto max-w-7xl">
 
-        {/* =================================================
-            Back
-        ================================================= */}
+        {/* Back */}
 
         <button
           type="button"
-          onClick={() =>
-            navigate(-1)
-          }
+          onClick={() => navigate(-1)}
           className="
             mb-6
             inline-flex
@@ -444,9 +427,7 @@ export default function DepartmentsPage() {
           العودة إلى الكليات
         </button>
 
-        {/* =================================================
-            Header
-        ================================================= */}
+        {/* Header */}
 
         <div
           className="
@@ -532,9 +513,7 @@ export default function DepartmentsPage() {
           </div>
         </div>
 
-        {/* =================================================
-            Search
-        ================================================= */}
+        {/* Search */}
 
         {departments.length > 0 && (
           <div className="mb-7">
@@ -542,9 +521,7 @@ export default function DepartmentsPage() {
               type="text"
               value={search}
               onChange={(event) =>
-                setSearch(
-                  event.target.value,
-                )
+                setSearch(event.target.value)
               }
               placeholder="ابحث عن قسم..."
               className="
@@ -568,9 +545,7 @@ export default function DepartmentsPage() {
           </div>
         )}
 
-        {/* =================================================
-            Empty
-        ================================================= */}
+        {/* Empty / Departments */}
 
         {departments.length === 0 ? (
           <div
@@ -647,11 +622,6 @@ export default function DepartmentsPage() {
             </p>
           </div>
         ) : (
-
-          /* =================================================
-             Departments
-          ================================================= */
-
           <div
             className="
               grid
@@ -666,6 +636,9 @@ export default function DepartmentsPage() {
                 <DepartmentCard
                   key={department.id}
                   department={department}
+                  specialtiesCount={
+                    department.specialties_count ?? 0
+                  }
                   onClick={() =>
                     navigate(
                       `/departments/${department.id}`,
@@ -676,7 +649,6 @@ export default function DepartmentsPage() {
             )}
           </div>
         )}
-
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import { supabase } from "../../../lib/supabaseClient";
 
 // =====================================================
@@ -14,6 +15,12 @@ export interface AdminUniversity {
   description: string | null;
   logo_url: string | null;
   cover_image_url: string | null;
+  founded_year: number | null;
+  website_url: string | null;
+  official_email: string | null;
+  phone: string | null;
+  address: string | null;
+  institution_type: string | null;
   created_at: string | null;
 }
 
@@ -94,9 +101,7 @@ export interface AdminLesson {
 // API BASE
 // =====================================================
 
-const API_BASE_URL = `${
-  import.meta.env.VITE_API_URL
-}/api/admin`;
+const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/admin`;
 
 // =====================================================
 // ACCESS TOKEN
@@ -176,15 +181,51 @@ export async function getAdminUniversities(): Promise<
   return adminRequest<AdminUniversity[]>("/universities");
 }
 
-export async function createAdminUniversity(
-  payload: {
-    name: string;
-    slug: string;
-    country_id?: string | null;
-    city?: string | null;
-    description?: string | null;
-    logo_url?: string | null;
+export interface AdminUniversityPayload {
+  name: string;
+  slug: string;
+  country_id?: string | null;
+  city?: string | null;
+  description?: string | null;
+  logo_url?: string | null;
+  founded_year?: number | null;
+  website_url?: string | null;
+  official_email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  institution_type?: string | null;
+}
+
+function prepareUniversityPayload(
+  payload: AdminUniversityPayload
+) {
+  if (
+    payload.founded_year != null &&
+    (!Number.isInteger(payload.founded_year) ||
+      payload.founded_year < 1000 ||
+      payload.founded_year > 2100)
+  ) {
+    throw new Error("Founded year must be between 1000 and 2100");
   }
+
+  return {
+    name: payload.name.trim(),
+    slug: payload.slug.trim(),
+    country_id: payload.country_id?.trim() || null,
+    city: payload.city?.trim() || null,
+    description: payload.description?.trim() || null,
+    logo_url: payload.logo_url?.trim() || null,
+    founded_year: payload.founded_year ?? null,
+    website_url: payload.website_url?.trim() || null,
+    official_email: payload.official_email?.trim() || null,
+    phone: payload.phone?.trim() || null,
+    address: payload.address?.trim() || null,
+    institution_type: payload.institution_type?.trim() || null,
+  };
+}
+
+export async function createAdminUniversity(
+  payload: AdminUniversityPayload
 ): Promise<AdminUniversity> {
   if (!payload.name?.trim()) {
     throw new Error("University name is required");
@@ -196,27 +237,13 @@ export async function createAdminUniversity(
 
   return adminRequest<AdminUniversity>("/universities", {
     method: "POST",
-    body: JSON.stringify({
-      name: payload.name.trim(),
-      slug: payload.slug.trim(),
-      country_id: payload.country_id?.trim() || null,
-      city: payload.city?.trim() || null,
-      description: payload.description?.trim() || null,
-      logo_url: payload.logo_url?.trim() || null,
-    }),
+    body: JSON.stringify(prepareUniversityPayload(payload)),
   });
 }
 
 export async function updateAdminUniversity(
   id: string,
-  payload: {
-    name: string;
-    slug: string;
-    country_id?: string | null;
-    city?: string | null;
-    description?: string | null;
-    logo_url?: string | null;
-  }
+  payload: AdminUniversityPayload
 ): Promise<AdminUniversity> {
   if (!id?.trim()) {
     throw new Error("University ID is required");
@@ -234,14 +261,7 @@ export async function updateAdminUniversity(
     `/universities/${id.trim()}`,
     {
       method: "PUT",
-      body: JSON.stringify({
-        name: payload.name.trim(),
-        slug: payload.slug.trim(),
-        country_id: payload.country_id?.trim() || null,
-        city: payload.city?.trim() || null,
-        description: payload.description?.trim() || null,
-        logo_url: payload.logo_url?.trim() || null,
-      }),
+      body: JSON.stringify(prepareUniversityPayload(payload)),
     }
   );
 }

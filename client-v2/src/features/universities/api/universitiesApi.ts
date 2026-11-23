@@ -1,6 +1,29 @@
+
 import { supabase } from "../../../lib/supabaseClient";
 
 import type { University } from "../types/university";
+
+/**
+ * الحقول المشتركة لجلب بيانات الجامعات
+ */
+const UNIVERSITY_SELECT = `
+  id,
+  name,
+  slug,
+  short_name,
+  country_id,
+  city,
+  logo_url,
+  created_at,
+  description,
+  cover_image_url,
+  founded_year,
+  website_url,
+  official_email,
+  phone,
+  address,
+  institution_type
+`;
 
 /**
  * جلب جميع الجامعات
@@ -8,16 +31,7 @@ import type { University } from "../types/university";
 export async function getUniversities(): Promise<University[]> {
   const { data, error } = await supabase
     .from("universities")
-    .select(`
-      id,
-      name,
-      slug,
-      short_name,
-      country_id,
-      city,
-      logo_url,
-      created_at
-    `)
+    .select(UNIVERSITY_SELECT)
     .order("name", {
       ascending: true,
     });
@@ -38,16 +52,7 @@ export async function getUniversitiesByCountry(
 ): Promise<University[]> {
   const { data, error } = await supabase
     .from("universities")
-    .select(`
-      id,
-      name,
-      slug,
-      short_name,
-      country_id,
-      city,
-      logo_url,
-      created_at
-    `)
+    .select(UNIVERSITY_SELECT)
     .eq("country_id", countryId)
     .order("name", {
       ascending: true,
@@ -73,16 +78,7 @@ export async function getUniversityById(
 ): Promise<University> {
   const { data, error } = await supabase
     .from("universities")
-    .select(`
-      id,
-      name,
-      slug,
-      short_name,
-      country_id,
-      city,
-      logo_url,
-      created_at
-    `)
+    .select(UNIVERSITY_SELECT)
     .eq("id", id)
     .single();
 
@@ -101,7 +97,7 @@ export async function getUniversityById(
 /**
  * جلب جامعة بواسطة Slug
  *
- * هذا هو المسار الأساسي للصفحات العامة:
+ * المسار الأساسي للصفحات العامة:
  * /universities/:slug
  */
 export async function getUniversityBySlug(
@@ -109,16 +105,7 @@ export async function getUniversityBySlug(
 ): Promise<University> {
   const { data, error } = await supabase
     .from("universities")
-    .select(`
-      id,
-      name,
-      slug,
-      short_name,
-      country_id,
-      city,
-      logo_url,
-      created_at
-    `)
+    .select(UNIVERSITY_SELECT)
     .eq("slug", slug)
     .single();
 

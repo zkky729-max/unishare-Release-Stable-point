@@ -352,6 +352,12 @@ export async function createUniversity(
       description,
       logo_url,
       cover_image_url,
+      founded_year,
+      website_url,
+      official_email,
+      phone,
+      address,
+      institution_type,
     } = req.body;
 
     if (!isNonEmptyString(name)) {
@@ -365,6 +371,27 @@ export async function createUniversity(
       return res.status(400).json({
         success: false,
         message: "University slug is required.",
+      });
+    }
+
+    const parsedFoundedYear =
+      founded_year === null ||
+      founded_year === undefined ||
+      founded_year === ""
+        ? null
+        : Number(founded_year);
+
+    if (
+      parsedFoundedYear !== null &&
+      (
+        !Number.isInteger(parsedFoundedYear) ||
+        parsedFoundedYear < 1000 ||
+        parsedFoundedYear > 2100
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid university founding year.",
       });
     }
 
@@ -397,6 +424,27 @@ export async function createUniversity(
           cover_image_url:
             isNonEmptyString(cover_image_url)
               ? cover_image_url.trim()
+              : null,
+          founded_year: parsedFoundedYear,
+          website_url:
+            isNonEmptyString(website_url)
+              ? website_url.trim()
+              : null,
+          official_email:
+            isNonEmptyString(official_email)
+              ? official_email.trim()
+              : null,
+          phone:
+            isNonEmptyString(phone)
+              ? phone.trim()
+              : null,
+          address:
+            isNonEmptyString(address)
+              ? address.trim()
+              : null,
+          institution_type:
+            isNonEmptyString(institution_type)
+              ? institution_type.trim()
               : null,
         })
         .select("*")
@@ -503,6 +551,12 @@ export async function updateUniversity(
       description,
       logo_url,
       cover_image_url,
+      founded_year,
+      website_url,
+      official_email,
+      phone,
+      address,
+      institution_type,
     } = req.body;
 
     if (!isNonEmptyString(id)) {
@@ -523,6 +577,27 @@ export async function updateUniversity(
       return res.status(400).json({
         success: false,
         message: "University slug is required.",
+      });
+    }
+
+    const parsedFoundedYear =
+      founded_year === null ||
+      founded_year === undefined ||
+      founded_year === ""
+        ? null
+        : Number(founded_year);
+
+    if (
+      parsedFoundedYear !== null &&
+      (
+        !Number.isInteger(parsedFoundedYear) ||
+        parsedFoundedYear < 1000 ||
+        parsedFoundedYear > 2100
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid university founding year.",
       });
     }
 
@@ -555,6 +630,27 @@ export async function updateUniversity(
           cover_image_url:
             isNonEmptyString(cover_image_url)
               ? cover_image_url.trim()
+              : null,
+          founded_year: parsedFoundedYear,
+          website_url:
+            isNonEmptyString(website_url)
+              ? website_url.trim()
+              : null,
+          official_email:
+            isNonEmptyString(official_email)
+              ? official_email.trim()
+              : null,
+          phone:
+            isNonEmptyString(phone)
+              ? phone.trim()
+              : null,
+          address:
+            isNonEmptyString(address)
+              ? address.trim()
+              : null,
+          institution_type:
+            isNonEmptyString(institution_type)
+              ? institution_type.trim()
               : null,
         })
         .eq("id", id.trim())

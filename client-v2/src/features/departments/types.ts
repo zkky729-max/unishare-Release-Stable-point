@@ -5,4 +5,5 @@ export interface Department {
   slug: string;
   description?: string | null;
   created_at: string;
+  specialties_count?: number;
 }

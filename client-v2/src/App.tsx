@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Navigate,
@@ -95,6 +96,12 @@ import LessonDetailsPage from "./features/lessons/pages/LessonDetailsPage";
 
 import MessagesPage from "./features/messages/pages/MessagesPage";
 import ConversationPage from "./features/messages/pages/ConversationPage";
+
+// =====================================================
+// GROUP CHATS
+// =====================================================
+
+import GroupChatPage from "./features/groupChats/pages/GroupChatPage";
 
 // =====================================================
 // FRIENDS
@@ -301,6 +308,15 @@ export default function App() {
             <Route
               path="/messages/:conversationId"
               element={<ConversationPage />}
+            />
+
+            {/* =============================================
+                GROUP CHATS
+            ============================================= */}
+
+            <Route
+              path="/group-chats/:groupId"
+              element={<GroupChatPage />}
             />
 
             {/* =============================================
