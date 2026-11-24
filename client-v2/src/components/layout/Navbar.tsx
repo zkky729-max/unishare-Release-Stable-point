@@ -6,17 +6,36 @@ import {
   UserPlus,
   X,
   Menu,
+  Loader2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import UniShareLogo from "../brand/UniShareLogo";
 
-import { getFriendRequests } from "../../features/friends/api/getFriendRequests";
-import { getConversations } from "../../features/messages/api/getConversations";
-import { searchUsers } from "../../features/messages/api/searchUsers";
+import {
+  getFriendRequests,
+} from "../../features/friends/api/getFriendRequests";
 
-import type { UserSearchResult } from "../../features/messages/types/message";
+import {
+  getConversations,
+} from "../../features/messages/api/getConversations";
+
+import {
+  searchUsers,
+} from "../../features/messages/api/searchUsers";
+
+import type {
+  UserSearchResult,
+} from "../../features/messages/types/message";
 
 interface NotificationData {
   friendRequestsCount: number;
@@ -27,8 +46,13 @@ interface NavbarProps {
   onMenuClick?: () => void;
 }
 
-export default function Navbar({ onMenuClick }: NavbarProps) {
+export default function Navbar({
+  onMenuClick,
+}: NavbarProps) {
   const navigate = useNavigate();
+
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   // =====================================================
   // NOTIFICATIONS
@@ -58,7 +82,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const [showSearchResults, setShowSearchResults] =
     useState(false);
 
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchLoading, setSearchLoading] =
+    useState(false);
 
   // =====================================================
   // LOAD NOTIFICATIONS
@@ -116,6 +141,42 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   }, []);
 
   // =====================================================
+  // CLOSE MENUS WHEN CLICKING OUTSIDE
+  // =====================================================
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      const target = event.target as Node;
+
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(target)
+      ) {
+        setShowNotifications(false);
+      }
+
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(target)
+      ) {
+        setShowSearchResults(false);
+      }
+    }
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick
+      );
+    };
+  }, []);
+
+  // =====================================================
   // MAIN SEARCH
   // =====================================================
 
@@ -140,15 +201,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           const results =
             await searchUsers(normalizedQuery);
 
-          if (cancelled) {
-            return;
-          }
+          if (cancelled) return;
 
           setSearchResults(results);
         } catch (error) {
-          if (cancelled) {
-            return;
-          }
+          if (cancelled) return;
 
           console.error(
             "Error searching users:",
@@ -180,44 +237,25 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     notifications.unreadMessagesCount;
 
   // =====================================================
-  // CLOSE NOTIFICATIONS
+  // HANDLERS
   // =====================================================
 
   function closeNotifications() {
     setShowNotifications(false);
   }
 
-  // =====================================================
-  // FRIEND REQUESTS
-  // =====================================================
-
   function handleFriendRequests() {
     closeNotifications();
     navigate("/friends");
   }
-
-  // =====================================================
-  // MESSAGES
-  // =====================================================
 
   function handleMessages() {
     closeNotifications();
     navigate("/messages");
   }
 
-  // =====================================================
-  // OPEN SEARCHED USER PROFILE
-  // =====================================================
-
   function handleUserProfile(userId: string) {
-    if (!userId) {
-      return;
-    }
-
-    console.log(
-      "SEARCH RESULT USER ID:",
-      userId
-    );
+    if (!userId) return;
 
     setSearchQuery("");
     setSearchResults([]);
@@ -234,88 +272,67 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     <header
       dir="rtl"
       className="
-        sticky
-        top-0
-        z-40
-        flex
-        min-h-[76px]
-        items-center
-        justify-between
+        sticky top-0 z-40
+        flex min-h-[76px]
+        items-center justify-between
         gap-3
-        border-b
-        border-[var(--unishare-border)]
-        bg-white/90
-        px-3
-        py-3
+        border-b border-[var(--unishare-border)]
+        bg-white/95
+        px-3 py-3
+        shadow-sm
         backdrop-blur-xl
-        sm:gap-4
-        sm:px-6
+        sm:gap-5 sm:px-6
       "
     >
-      {/* =====================================================
-          MOBILE MENU BUTTON
-      ===================================================== */}
+      {/* MOBILE MENU */}
 
       <button
         type="button"
         onClick={() => onMenuClick?.()}
         aria-label="فتح القائمة"
         className="
-          flex
-          h-11
-          w-11
-          shrink-0
-          items-center
-          justify-center
+          flex h-11 w-11 shrink-0
+          items-center justify-center
           rounded-xl
-          border
-          border-[var(--unishare-border)]
+          border border-[var(--unishare-border)]
           bg-white
           text-[var(--unishare-text)]
-          transition
+          transition-all duration-200
           hover:border-blue-200
           hover:bg-blue-50
           hover:text-blue-600
-          focus:outline-none
-          focus:ring-4
-          focus:ring-blue-500/10
+          focus-visible:ring-4
+          focus-visible:ring-blue-500/15
           lg:hidden
         "
       >
         <Menu size={23} strokeWidth={2} />
       </button>
 
-      {/* =====================================================
-          MOBILE LOGO
-      ===================================================== */}
+      {/* MOBILE LOGO */}
 
-      <div className="lg:hidden">
+      <div className="shrink-0 lg:hidden">
         <UniShareLogo
           showText={false}
           compact
         />
       </div>
 
-      {/* =====================================================
-          MAIN SEARCH
-      ===================================================== */}
+      {/* SEARCH */}
 
       <div
+        ref={searchRef}
         className="
-          relative
-          w-full
-          max-w-xl
+          relative min-w-0 flex-1
+          lg:max-w-xl
         "
       >
         <Search
-          size={19}
+          size={20}
           strokeWidth={2}
           className="
             pointer-events-none
-            absolute
-            right-3.5
-            top-1/2
-            z-10
+            absolute right-4 top-1/2 z-10
             -translate-y-1/2
             text-[var(--unishare-muted)]
           "
@@ -324,28 +341,27 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         <input
           type="search"
           value={searchQuery}
-          onChange={(event) => {
-            setSearchQuery(event.target.value);
-          }}
+          onChange={(event) =>
+            setSearchQuery(event.target.value)
+          }
           onFocus={() => {
             if (searchQuery.trim().length >= 2) {
               setShowSearchResults(true);
             }
           }}
           placeholder="ابحث في المنصة..."
+          aria-label="البحث في المنصة"
           className="
-            h-11
-            w-full
-            rounded-xl
-            border
-            border-[var(--unishare-border)]
-            bg-[var(--unishare-background)]
-            pr-11
-            pl-4
-            text-sm
+            h-12 w-full
+            rounded-2xl
+            border border-[var(--unishare-border)]
+            bg-slate-50
+            pr-12 pl-4
+            text-base
+            font-medium
             text-[var(--unishare-text)]
             outline-none
-            transition-all
+            transition-all duration-200
             placeholder:text-slate-400
             focus:border-[var(--unishare-blue)]
             focus:bg-white
@@ -354,43 +370,41 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           "
         />
 
-        {/* ===================================================
-            SEARCH RESULTS
-        =================================================== */}
+        {/* SEARCH RESULTS */}
 
         {showSearchResults &&
           searchQuery.trim().length >= 2 && (
             <div
               className="
-                absolute
-                right-0
-                top-14
-                z-50
-                w-full
+                absolute right-0 top-[calc(100%+10px)]
+                z-50 w-full
                 overflow-hidden
                 rounded-2xl
-                border
-                border-gray-200
+                border border-[var(--unishare-border)]
                 bg-white
                 shadow-xl
               "
             >
               {searchLoading && (
-                <div className="px-4 py-6 text-center text-sm text-gray-500">
+                <div className="flex items-center justify-center gap-2 px-4 py-7 text-base text-slate-500">
+                  <Loader2
+                    size={19}
+                    className="animate-spin"
+                  />
                   جاري البحث...
                 </div>
               )}
 
               {!searchLoading &&
                 searchResults.length === 0 && (
-                  <div className="px-4 py-7 text-center">
-                    <Search className="mx-auto mb-2 h-7 w-7 text-gray-300" />
+                  <div className="px-4 py-8 text-center">
+                    <Search className="mx-auto mb-3 h-8 w-8 text-slate-300" />
 
-                    <p className="text-sm font-semibold text-gray-700">
+                    <p className="text-base font-bold text-slate-700">
                       لا توجد نتائج
                     </p>
 
-                    <p className="mt-1 text-xs text-gray-400">
+                    <p className="mt-1 text-sm text-slate-500">
                       جرّب اسمًا أو اسم مستخدم آخر.
                     </p>
                   </div>
@@ -398,7 +412,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
               {!searchLoading &&
                 searchResults.length > 0 && (
-                  <div className="max-h-[360px] overflow-y-auto p-2">
+                  <div className="max-h-[380px] overflow-y-auto p-2">
                     {searchResults.map((user) => (
                       <button
                         key={user.userId}
@@ -407,19 +421,14 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                           handleUserProfile(user.userId)
                         }
                         className="
-                          flex
-                          w-full
-                          items-center
-                          gap-3
-                          rounded-xl
-                          p-3
+                          flex w-full items-center gap-3
+                          rounded-xl p-3
                           text-right
-                          transition
+                          transition-colors
                           hover:bg-blue-50
+                          focus-visible:bg-blue-50
                         "
                       >
-                        {/* Avatar */}
-
                         {user.avatarUrl ? (
                           <img
                             src={user.avatarUrl}
@@ -429,27 +438,21 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                               "المستخدم"
                             }
                             className="
-                              h-10
-                              w-10
-                              shrink-0
+                              h-11 w-11 shrink-0
                               rounded-full
+                              border border-slate-100
                               object-cover
                             "
                           />
                         ) : (
                           <div
                             className="
-                              flex
-                              h-10
-                              w-10
-                              shrink-0
-                              items-center
-                              justify-center
+                              flex h-11 w-11 shrink-0
+                              items-center justify-center
                               rounded-full
                               bg-blue-100
-                              text-sm
-                              font-bold
-                              text-blue-600
+                              text-base font-bold
+                              text-blue-700
                             "
                           >
                             {(
@@ -463,17 +466,15 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                           </div>
                         )}
 
-                        {/* User Info */}
-
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-bold text-gray-800">
+                          <p className="truncate text-base font-bold text-slate-800">
                             {user.fullName ||
                               user.username ||
                               "مستخدم"}
                           </p>
 
                           {user.username && (
-                            <p className="mt-0.5 truncate text-xs text-gray-500">
+                            <p className="mt-0.5 truncate text-sm text-slate-500">
                               @{user.username}
                             </p>
                           )}
@@ -486,75 +487,60 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           )}
       </div>
 
-      {/* =====================================================
-          RIGHT ACTIONS
-      ===================================================== */}
+      {/* ACTIONS */}
 
-      <div
-        className="
-          flex
-          shrink-0
-          items-center
-          gap-2
-          sm:gap-4
-        "
-      >
-        {/* ===================================================
-            NOTIFICATIONS BUTTON
-        =================================================== */}
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
 
-        <div className="relative">
+        {/* NOTIFICATIONS */}
+
+        <div
+          ref={notificationsRef}
+          className="relative"
+        >
           <button
             type="button"
             aria-label="الإشعارات"
+            aria-expanded={showNotifications}
             onClick={() =>
               setShowNotifications((current) => !current)
             }
             className="
-              relative
-              flex
-              h-11
-              w-11
-              items-center
-              justify-center
+              relative flex h-11 w-11
+              items-center justify-center
               rounded-xl
-              border
-              border-[var(--unishare-border)]
+              border border-[var(--unishare-border)]
               bg-white
               text-[var(--unishare-muted)]
-              transition-all
+              transition-all duration-200
               hover:border-blue-200
               hover:bg-blue-50
               hover:text-[var(--unishare-blue)]
-              focus:outline-none
-              focus:ring-4
-              focus:ring-blue-500/10
+              focus-visible:ring-4
+              focus-visible:ring-blue-500/10
             "
           >
-            <Bell
-              size={20}
-              strokeWidth={2}
-            />
+            {loadingNotifications &&
+            totalNotifications === 0 ? (
+              <Loader2
+                size={20}
+                className="animate-spin"
+              />
+            ) : (
+              <Bell size={21} strokeWidth={2} />
+            )}
 
             {totalNotifications > 0 && (
               <span
                 className="
-                  absolute
-                  -right-1
-                  -top-1
-                  flex
-                  min-h-5
-                  min-w-5
-                  items-center
-                  justify-center
+                  absolute -right-1 -top-1
+                  flex min-h-5 min-w-5
+                  items-center justify-center
                   rounded-full
                   bg-red-500
                   px-1
-                  text-[10px]
-                  font-bold
+                  text-[11px] font-bold
                   text-white
-                  ring-2
-                  ring-white
+                  ring-2 ring-white
                 "
               >
                 {totalNotifications > 99
@@ -564,44 +550,35 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
             )}
           </button>
 
-          {/* =================================================
-              NOTIFICATIONS PANEL
-          ================================================= */}
+          {/* NOTIFICATIONS PANEL */}
 
           {showNotifications && (
             <div
               className="
-                absolute
-                left-0
-                top-14
+                absolute left-0 top-[calc(100%+10px)]
                 z-50
-                w-[340px]
-                max-w-[calc(100vw-2rem)]
+                w-[350px]
+                max-w-[calc(100vw-1.5rem)]
                 overflow-hidden
                 rounded-2xl
-                border
-                border-gray-200
+                border border-[var(--unishare-border)]
                 bg-white
                 shadow-xl
               "
             >
               <div
                 className="
-                  flex
-                  items-center
-                  justify-between
-                  border-b
-                  border-gray-100
-                  px-4
-                  py-3
+                  flex items-center justify-between
+                  border-b border-slate-100
+                  px-4 py-4
                 "
               >
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900">
+                  <h3 className="text-base font-bold text-slate-900">
                     الإشعارات
                   </h3>
 
-                  <p className="mt-0.5 text-xs text-gray-500">
+                  <p className="mt-1 text-sm text-slate-500">
                     آخر التحديثات
                   </p>
                 </div>
@@ -609,28 +586,29 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 <button
                   type="button"
                   onClick={closeNotifications}
-                  className="
-                    flex
-                    h-8
-                    w-8
-                    items-center
-                    justify-center
-                    rounded-lg
-                    text-gray-400
-                    transition
-                    hover:bg-gray-100
-                    hover:text-gray-700
-                  "
                   aria-label="إغلاق"
+                  className="
+                    flex h-9 w-9 items-center justify-center
+                    rounded-xl
+                    text-slate-400
+                    transition
+                    hover:bg-slate-100
+                    hover:text-slate-700
+                  "
                 >
-                  <X size={17} />
+                  <X size={19} />
                 </button>
               </div>
 
-              <div className="p-2">
+              <div className="space-y-1 p-2">
+
                 {loadingNotifications &&
                   totalNotifications === 0 && (
-                    <div className="px-4 py-8 text-center text-sm text-gray-500">
+                    <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-slate-500">
+                      <Loader2
+                        size={18}
+                        className="animate-spin"
+                      />
                       جاري تحميل الإشعارات...
                     </div>
                   )}
@@ -638,13 +616,13 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 {!loadingNotifications &&
                   totalNotifications === 0 && (
                     <div className="px-4 py-8 text-center">
-                      <Bell className="mx-auto mb-3 h-9 w-9 text-gray-300" />
+                      <Bell className="mx-auto mb-3 h-10 w-10 text-slate-300" />
 
-                      <p className="text-sm font-semibold text-gray-700">
+                      <p className="text-base font-bold text-slate-700">
                         لا توجد إشعارات جديدة
                       </p>
 
-                      <p className="mt-1 text-xs text-gray-400">
+                      <p className="mt-2 text-sm leading-7 text-slate-500">
                         سنخبرك عند وصول طلب صداقة أو رسالة جديدة.
                       </p>
                     </div>
@@ -655,58 +633,35 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                     type="button"
                     onClick={handleFriendRequests}
                     className="
-                      flex
-                      w-full
-                      items-center
-                      gap-3
-                      rounded-xl
-                      p-3
+                      flex w-full items-center gap-3
+                      rounded-xl p-3
                       text-right
-                      transition
+                      transition-colors
                       hover:bg-blue-50
                     "
                   >
                     <div
                       className="
-                        flex
-                        h-10
-                        w-10
-                        shrink-0
-                        items-center
-                        justify-center
+                        flex h-11 w-11 shrink-0
+                        items-center justify-center
                         rounded-xl
-                        bg-blue-50
-                        text-blue-600
+                        bg-blue-50 text-blue-600
                       "
                     >
-                      <UserPlus size={19} />
+                      <UserPlus size={20} />
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-gray-800">
+                      <p className="text-base font-bold text-slate-800">
                         طلبات صداقة جديدة
                       </p>
 
-                      <p className="mt-0.5 text-xs text-gray-500">
+                      <p className="mt-1 text-sm text-slate-500">
                         لديك {notifications.friendRequestsCount} طلب صداقة بانتظارك
                       </p>
                     </div>
 
-                    <span
-                      className="
-                        flex
-                        h-6
-                        min-w-6
-                        items-center
-                        justify-center
-                        rounded-full
-                        bg-blue-600
-                        px-1.5
-                        text-xs
-                        font-bold
-                        text-white
-                      "
-                    >
+                    <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-blue-600 px-2 text-sm font-bold text-white">
                       {notifications.friendRequestsCount}
                     </span>
                   </button>
@@ -717,58 +672,35 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                     type="button"
                     onClick={handleMessages}
                     className="
-                      flex
-                      w-full
-                      items-center
-                      gap-3
-                      rounded-xl
-                      p-3
+                      flex w-full items-center gap-3
+                      rounded-xl p-3
                       text-right
-                      transition
+                      transition-colors
                       hover:bg-purple-50
                     "
                   >
                     <div
                       className="
-                        flex
-                        h-10
-                        w-10
-                        shrink-0
-                        items-center
-                        justify-center
+                        flex h-11 w-11 shrink-0
+                        items-center justify-center
                         rounded-xl
-                        bg-purple-50
-                        text-purple-600
+                        bg-purple-50 text-purple-600
                       "
                     >
-                      <MessageCircle size={19} />
+                      <MessageCircle size={20} />
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-gray-800">
+                      <p className="text-base font-bold text-slate-800">
                         رسائل غير مقروءة
                       </p>
 
-                      <p className="mt-0.5 text-xs text-gray-500">
+                      <p className="mt-1 text-sm text-slate-500">
                         لديك {notifications.unreadMessagesCount} رسالة غير مقروءة
                       </p>
                     </div>
 
-                    <span
-                      className="
-                        flex
-                        h-6
-                        min-w-6
-                        items-center
-                        justify-center
-                        rounded-full
-                        bg-purple-600
-                        px-1.5
-                        text-xs
-                        font-bold
-                        text-white
-                      "
-                    >
+                    <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-purple-600 px-2 text-sm font-bold text-white">
                       {notifications.unreadMessagesCount}
                     </span>
                   </button>
@@ -776,24 +708,16 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
               </div>
 
               {totalNotifications > 0 && (
-                <div
-                  className="
-                    border-t
-                    border-gray-100
-                    px-4
-                    py-2.5
-                    text-center
-                  "
-                >
+                <div className="border-t border-slate-100 px-4 py-3 text-center">
                   <button
                     type="button"
                     onClick={() => {
                       void loadNotifications();
                     }}
                     className="
-                      text-xs
-                      font-semibold
+                      text-sm font-bold
                       text-blue-600
+                      transition
                       hover:text-blue-700
                     "
                   >
@@ -805,24 +729,18 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           )}
         </div>
 
-        {/* ===================================================
-            ROLE
-        =================================================== */}
+        {/* ROLE */}
 
         <div
           className="
-            hidden
+            hidden sm:flex
             items-center
             rounded-xl
-            border
-            border-blue-100
+            border border-blue-100
             bg-blue-50
-            px-4
-            py-2
-            text-sm
-            font-bold
+            px-4 py-2
+            text-sm font-bold
             text-[var(--unishare-blue)]
-            sm:flex
           "
         >
           طالب

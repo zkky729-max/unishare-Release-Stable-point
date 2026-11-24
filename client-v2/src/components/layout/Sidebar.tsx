@@ -28,6 +28,12 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
+interface NavigationLink {
+  name: string;
+  path: string;
+  icon: LucideIcon;
+}
+
 export default function Sidebar({ onClose }: SidebarProps) {
   const navigate = useNavigate();
 
@@ -36,7 +42,10 @@ export default function Sidebar({ onClose }: SidebarProps) {
     signOut,
   } = useAuth();
 
-  // User information
+  // =====================================================
+  // USER INFORMATION
+  // =====================================================
+
   const displayName =
     profile?.full_name?.trim() ||
     profile?.username?.trim() ||
@@ -45,13 +54,15 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const avatar =
     profile?.avatar_url?.trim() || null;
 
-  // Role label
   const roleLabel =
     profile?.role === "elite_student"
       ? "طالب متميز"
       : "طالب";
 
-  // Logout
+  // =====================================================
+  // LOGOUT
+  // =====================================================
+
   async function handleSignOut() {
     try {
       await signOut();
@@ -61,16 +72,18 @@ export default function Sidebar({ onClose }: SidebarProps) {
         replace: true,
       });
     } catch (error) {
-      console.error("Sidebar logout error:", error);
+      console.error(
+        "Sidebar logout error:",
+        error
+      );
     }
   }
 
-  // Navigation links
-  const links: {
-    name: string;
-    path: string;
-    icon: LucideIcon;
-  }[] = [
+  // =====================================================
+  // NAVIGATION LINKS
+  // =====================================================
+
+  const links: NavigationLink[] = [
     {
       name: "الرئيسية",
       path: "/dashboard",
@@ -103,7 +116,10 @@ export default function Sidebar({ onClose }: SidebarProps) {
     },
   ];
 
-  // Shared navigation item
+  // =====================================================
+  // NAVIGATION ITEM
+  // =====================================================
+
   function renderNavItem(
     path: string,
     name: string,
@@ -116,32 +132,26 @@ export default function Sidebar({ onClose }: SidebarProps) {
         onClick={onClose}
         className={({ isActive }) =>
           [
-            "group",
-            "flex",
-            "items-center",
-            "gap-3",
-            "rounded-xl",
-            "px-4",
-            "py-3",
-            "text-sm",
-            "font-medium",
-            "transition-all",
-            "duration-200",
+            "group relative",
+            "flex items-center gap-3",
+            "min-h-[54px]",
+            "rounded-2xl px-3 py-2.5",
+            "text-base font-semibold",
+            "transition-all duration-200",
             "outline-none",
-            "focus:outline-none",
-            "focus-visible:outline-none",
+            "focus-visible:ring-4",
+            "focus-visible:ring-blue-500/15",
             "[-webkit-tap-highlight-color:transparent]",
             isActive
               ? [
                   "text-white",
-                  "bg-[linear-gradient(135deg,#3b82f6_0%,#6366f1_55%,#06b6d4_100%)]",
-                  "shadow-md",
-                  "shadow-blue-500/20",
+                  "bg-[var(--unishare-gradient)]",
+                  "shadow-lg shadow-blue-500/20",
                 ].join(" ")
               : [
                   "text-slate-600",
-                  "hover:bg-blue-50/70",
-                  "hover:text-[var(--unishare-blue)]",
+                  "hover:bg-blue-50",
+                  "hover:text-blue-700",
                   "dark:text-slate-300",
                   "dark:hover:bg-slate-900",
                   "dark:hover:text-blue-400",
@@ -151,48 +161,54 @@ export default function Sidebar({ onClose }: SidebarProps) {
       >
         {({ isActive }) => (
           <>
+            {isActive && (
+              <span
+                className="
+                  absolute right-0 top-3 bottom-3
+                  w-1 rounded-l-full
+                  bg-white/80
+                "
+              />
+            )}
+
             <div
               className={[
-                "flex",
-                "h-9",
-                "w-9",
-                "shrink-0",
-                "items-center",
-                "justify-center",
-                "rounded-lg",
-                "transition-colors",
-                "duration-200",
+                "flex h-10 w-10 shrink-0",
+                "items-center justify-center",
+                "rounded-xl",
+                "transition-all duration-200",
                 isActive
-                  ? "bg-white/15"
+                  ? "bg-white/15 text-white"
                   : [
-                      "bg-slate-100",
-                      "group-hover:bg-blue-50",
+                      "bg-slate-100 text-slate-600",
+                      "group-hover:bg-blue-100",
+                      "group-hover:text-blue-700",
                       "dark:bg-slate-800",
-                      "dark:group-hover:bg-blue-950/40",
+                      "dark:text-slate-300",
+                      "dark:group-hover:bg-blue-950/50",
                     ].join(" "),
               ].join(" ")}
             >
               <Icon
-                size={19}
-                strokeWidth={isActive ? 2.3 : 2}
+                size={21}
+                strokeWidth={isActive ? 2.4 : 2}
               />
             </div>
 
-            <span className="flex-1">
+            <span className="min-w-0 flex-1">
               {name}
             </span>
 
             <ChevronLeft
-              size={16}
+              size={18}
               className={[
-                "transition-all",
-                "duration-200",
+                "shrink-0 transition-all duration-200",
                 isActive
-                  ? "opacity-100"
+                  ? "translate-x-0 opacity-100"
                   : [
-                      "opacity-0",
-                      "group-hover:-translate-x-1",
-                      "group-hover:opacity-50",
+                      "translate-x-1 opacity-0",
+                      "group-hover:translate-x-0",
+                      "group-hover:opacity-60",
                     ].join(" "),
               ].join(" ")}
             />
@@ -202,69 +218,151 @@ export default function Sidebar({ onClose }: SidebarProps) {
     );
   }
 
-  // Render
+  // =====================================================
+  // FACULTY NAVIGATION
+  // =====================================================
+
+  function renderFacultyLink() {
+    if (!profile?.faculty_id) {
+      return (
+        <div
+          className="
+            rounded-2xl
+            border border-dashed border-slate-200
+            px-4 py-3
+            text-sm font-medium
+            text-slate-400
+            dark:border-slate-700
+            dark:text-slate-500
+          "
+        >
+          لم يتم تحديد الكلية
+        </div>
+      );
+    }
+
+    return (
+      <NavLink
+        to={`/faculties/${profile.faculty_id}/specialties`}
+        onClick={onClose}
+        className={({ isActive }) =>
+          [
+            "group relative flex items-center gap-3",
+            "min-h-[54px] rounded-2xl px-3 py-2.5",
+            "text-base font-semibold",
+            "transition-all duration-200",
+            "focus-visible:ring-4 focus-visible:ring-blue-500/15",
+            "[-webkit-tap-highlight-color:transparent]",
+            isActive
+              ? [
+                  "text-white",
+                  "bg-[var(--unishare-gradient)]",
+                  "shadow-lg shadow-blue-500/20",
+                ].join(" ")
+              : [
+                  "text-slate-600",
+                  "hover:bg-blue-50",
+                  "hover:text-blue-700",
+                  "dark:text-slate-300",
+                  "dark:hover:bg-slate-900",
+                  "dark:hover:text-blue-400",
+                ].join(" "),
+          ].join(" ")
+        }
+      >
+        {({ isActive }) => (
+          <>
+            {isActive && (
+              <span className="absolute right-0 top-3 bottom-3 w-1 rounded-l-full bg-white/80" />
+            )}
+
+            <div
+              className={[
+                "flex h-10 w-10 shrink-0",
+                "items-center justify-center rounded-xl",
+                isActive
+                  ? "bg-white/15 text-white"
+                  : [
+                      "bg-slate-100 text-slate-600",
+                      "group-hover:bg-blue-100",
+                      "group-hover:text-blue-700",
+                      "dark:bg-slate-800",
+                      "dark:text-slate-300",
+                    ].join(" "),
+              ].join(" ")}
+            >
+              <GraduationCap
+                size={21}
+                strokeWidth={isActive ? 2.4 : 2}
+              />
+            </div>
+
+            <span className="min-w-0 flex-1">
+              كليتي
+            </span>
+
+            <ChevronLeft
+              size={18}
+              className={[
+                "transition-all duration-200",
+                isActive
+                  ? "opacity-100"
+                  : "translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-60",
+              ].join(" ")}
+            />
+          </>
+        )}
+      </NavLink>
+    );
+  }
+
+  // =====================================================
+  // RENDER
+  // =====================================================
+
   return (
     <aside
       dir="rtl"
       className="
-        sticky
-        top-0
-        flex
-        h-screen
-        w-72
-        shrink-0
+        sticky top-0
+        flex h-screen w-72 shrink-0
         flex-col
-        border-l
-        border-[var(--unishare-border)]
+        border-l border-[var(--unishare-border)]
         bg-white
         shadow-sm
         dark:border-slate-800
         dark:bg-slate-950
       "
     >
-      {/* Brand */}
+      {/* BRAND */}
 
       <div
         className="
-          relative
-          overflow-hidden
-          border-b
-          border-[var(--unishare-border)]
-          px-6
-          py-5
+          relative overflow-hidden
+          border-b border-[var(--unishare-border)]
+          px-5 py-5
           dark:border-slate-800
         "
       >
         <div
           className="
-            pointer-events-none
-            absolute
-            -left-10
-            -top-10
-            h-24
-            w-24
-            rounded-full
-            bg-blue-400/10
-            blur-2xl
+            pointer-events-none absolute
+            -left-10 -top-10
+            h-28 w-28 rounded-full
+            bg-blue-400/10 blur-2xl
           "
         />
 
         <div className="relative flex items-center justify-between gap-3">
           <UniShareLogo />
 
-          {/* Mobile Close Button */}
-
           <button
             type="button"
             onClick={onClose}
             aria-label="إغلاق القائمة"
             className="
-              flex
-              h-9
-              w-9
-              shrink-0
-              items-center
-              justify-center
+              flex h-10 w-10 shrink-0
+              items-center justify-center
               rounded-xl
               text-slate-500
               transition-colors
@@ -281,32 +379,27 @@ export default function Sidebar({ onClose }: SidebarProps) {
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* NAVIGATION */}
 
       <nav
         aria-label="التنقل الرئيسي"
         className="
-          flex-1
-          overflow-y-auto
-          px-4
-          py-6
+          flex-1 overflow-y-auto
+          px-4 py-6
         "
       >
         <p
           className="
-            mb-3
-            px-3
-            text-[11px]
-            font-bold
-            uppercase
-            tracking-wider
+            mb-3 px-3
+            text-sm font-bold
+            tracking-wide
             text-[var(--unishare-muted)]
           "
         >
-          التنقل
+          القائمة الرئيسية
         </p>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {renderNavItem(
             links[0].path,
             links[0].name,
@@ -319,156 +412,67 @@ export default function Sidebar({ onClose }: SidebarProps) {
             links[1].icon
           )}
 
-          {/* My Faculty */}
+          {renderFacultyLink()}
+        </div>
 
-          {profile?.faculty_id ? (
-            <NavLink
-              to={`/faculties/${profile.faculty_id}/specialties`}
-              onClick={onClose}
-              className={({ isActive }) =>
-                [
-                  "group",
-                  "flex",
-                  "items-center",
-                  "gap-3",
-                  "rounded-xl",
-                  "px-4",
-                  "py-3",
-                  "text-sm",
-                  "font-medium",
-                  "transition-all",
-                  "duration-200",
-                  "outline-none",
-                  "focus:outline-none",
-                  "focus-visible:outline-none",
-                  "[-webkit-tap-highlight-color:transparent]",
-                  isActive
-                    ? [
-                        "text-white",
-                        "bg-[linear-gradient(135deg,#3b82f6_0%,#6366f1_55%,#06b6d4_100%)]",
-                        "shadow-md",
-                        "shadow-blue-500/20",
-                      ].join(" ")
-                    : [
-                        "text-slate-600",
-                        "hover:bg-blue-50/70",
-                        "hover:text-[var(--unishare-blue)]",
-                        "dark:text-slate-300",
-                        "dark:hover:bg-slate-900",
-                        "dark:hover:text-blue-400",
-                      ].join(" "),
-                ].join(" ")
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <div
-                    className={[
-                      "flex",
-                      "h-9",
-                      "w-9",
-                      "shrink-0",
-                      "items-center",
-                      "justify-center",
-                      "rounded-lg",
-                      "transition-colors",
-                      "duration-200",
-                      isActive
-                        ? "bg-white/15"
-                        : [
-                            "bg-slate-100",
-                            "group-hover:bg-blue-50",
-                            "dark:bg-slate-800",
-                            "dark:group-hover:bg-blue-950/40",
-                          ].join(" "),
-                    ].join(" ")}
-                  >
-                    <GraduationCap
-                      size={19}
-                      strokeWidth={isActive ? 2.3 : 2}
-                    />
-                  </div>
+        <div className="my-5 border-t border-slate-100 dark:border-slate-800" />
 
-                  <span className="flex-1">
-                    كليتي
-                  </span>
+        <p
+          className="
+            mb-3 px-3
+            text-sm font-bold
+            tracking-wide
+            text-[var(--unishare-muted)]
+          "
+        >
+          التواصل والمجتمع
+        </p>
 
-                  <ChevronLeft
-                    size={16}
-                    className={[
-                      "transition-all",
-                      "duration-200",
-                      isActive
-                        ? "opacity-100"
-                        : [
-                            "opacity-0",
-                            "group-hover:-translate-x-1",
-                            "group-hover:opacity-50",
-                          ].join(" "),
-                    ].join(" ")}
-                  />
-                </>
-              )}
-            </NavLink>
-          ) : (
-            <div
-              className="
-                rounded-xl
-                border
-                border-dashed
-                border-slate-200
-                px-4
-                py-3
-                text-sm
-                text-slate-400
-                dark:border-slate-700
-                dark:text-slate-500
-              "
-            >
-              لم يتم تحديد الكلية
-            </div>
+        <div className="space-y-2">
+          {renderNavItem(
+            links[2].path,
+            links[2].name,
+            links[2].icon
           )}
 
-          {/* Social */}
+          {renderNavItem(
+            links[3].path,
+            links[3].name,
+            links[3].icon
+          )}
 
-          <div className="space-y-1.5 pt-2">
-            {renderNavItem(
-              links[2].path,
-              links[2].name,
-              links[2].icon
-            )}
-
-            {renderNavItem(
-              links[3].path,
-              links[3].name,
-              links[3].icon
-            )}
-
-            {renderNavItem(
-              links[4].path,
-              links[4].name,
-              links[4].icon
-            )}
-          </div>
-
-          {/* Profile */}
-
-          <div className="pt-2">
-            {renderNavItem(
-              links[5].path,
-              links[5].name,
-              links[5].icon
-            )}
-          </div>
+          {renderNavItem(
+            links[4].path,
+            links[4].name,
+            links[4].icon
+          )}
         </div>
+
+        <div className="my-5 border-t border-slate-100 dark:border-slate-800" />
+
+        <p
+          className="
+            mb-3 px-3
+            text-sm font-bold
+            tracking-wide
+            text-[var(--unishare-muted)]
+          "
+        >
+          حسابي
+        </p>
+
+        {renderNavItem(
+          links[5].path,
+          links[5].name,
+          links[5].icon
+        )}
       </nav>
 
-      {/* User Card */}
+      {/* USER CARD */}
 
       <div
         className="
-          border-t
-          border-[var(--unishare-border)]
+          border-t border-[var(--unishare-border)]
           p-4
           dark:border-slate-800
         "
@@ -476,8 +480,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
         <div
           className="
             rounded-2xl
-            border
-            border-slate-100
+            border border-slate-100
             bg-[var(--unishare-background)]
             p-3
             dark:border-slate-800
@@ -491,24 +494,17 @@ export default function Sidebar({ onClose }: SidebarProps) {
               onClose?.();
             }}
             className="
-              flex
-              w-full
-              items-center
-              gap-3
-              rounded-xl
-              p-2
+              flex w-full items-center gap-3
+              rounded-xl p-2
               text-right
-              outline-none
-              transition-all
-              duration-200
+              transition-all duration-200
               hover:bg-blue-50
-              focus:outline-none
               focus-visible:ring-2
-              focus-visible:ring-blue-500/20
+              focus-visible:ring-blue-500/30
               dark:hover:bg-slate-800
             "
           >
-            {/* Unified Avatar */}
+            {/* AVATAR */}
 
             <div className="relative shrink-0">
               {avatar ? (
@@ -516,12 +512,11 @@ export default function Sidebar({ onClose }: SidebarProps) {
                   src={avatar}
                   alt={displayName}
                   className="
-                    h-10
-                    w-10
-                    rounded-xl
+                    h-12 w-12 rounded-xl
+                    border border-slate-100
                     object-cover
-                    ring-2
-                    ring-white
+                    ring-2 ring-white
+                    dark:border-slate-700
                     dark:ring-slate-800
                   "
                   onError={(event) => {
@@ -531,19 +526,13 @@ export default function Sidebar({ onClose }: SidebarProps) {
               ) : (
                 <div
                   className="
-                    flex
-                    h-10
-                    w-10
-                    items-center
-                    justify-center
+                    flex h-12 w-12
+                    items-center justify-center
                     rounded-xl
                     bg-blue-600
-                    text-2xl
-                    font-bold
-                    leading-none
+                    text-2xl font-bold
                     text-white
-                    ring-2
-                    ring-white
+                    ring-2 ring-white
                     dark:ring-slate-800
                   "
                   aria-label="الصورة الشخصية الافتراضية"
@@ -554,27 +543,20 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
               <span
                 className="
-                  absolute
-                  bottom-0
-                  left-0
-                  h-2.5
-                  w-2.5
-                  rounded-full
+                  absolute bottom-0 left-0
+                  h-3 w-3 rounded-full
                   bg-emerald-400
-                  ring-2
-                  ring-[var(--unishare-background)]
+                  ring-2 ring-[var(--unishare-background)]
                 "
               />
             </div>
 
-            {/* User Info */}
+            {/* USER INFO */}
 
             <div className="min-w-0 flex-1">
               <p
                 className="
-                  truncate
-                  text-sm
-                  font-semibold
+                  truncate text-base font-bold
                   text-slate-900
                   dark:text-white
                 "
@@ -584,9 +566,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
               <p
                 className="
-                  mt-0.5
-                  truncate
-                  text-xs
+                  mt-1 truncate text-sm
                   text-[var(--unishare-muted)]
                 "
               >
@@ -595,37 +575,25 @@ export default function Sidebar({ onClose }: SidebarProps) {
             </div>
           </button>
 
-          {/* Logout */}
+          {/* LOGOUT */}
 
           <button
             type="button"
             onClick={handleSignOut}
             className="
-              mt-3
-              flex
-              w-full
-              items-center
-              justify-center
-              gap-2
+              mt-3 flex w-full
+              min-h-11 items-center justify-center gap-2
               rounded-xl
-              border
-              border-slate-200
-              bg-white
-              px-3
-              py-2.5
-              text-sm
-              font-medium
+              border border-slate-200
+              bg-white px-3 py-2.5
+              text-base font-semibold
               text-slate-600
-              outline-none
-              transition-all
-              duration-200
-              focus:outline-none
-              focus-visible:outline-none
-              active:outline-none
-              [-webkit-tap-highlight-color:transparent]
+              transition-all duration-200
               hover:border-red-200
               hover:bg-red-50
               hover:text-red-600
+              focus-visible:ring-4
+              focus-visible:ring-red-500/10
               dark:border-slate-700
               dark:bg-slate-950
               dark:text-slate-300
@@ -634,7 +602,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
               dark:hover:text-red-400
             "
           >
-            <LogOut size={17} />
+            <LogOut size={19} />
             تسجيل الخروج
           </button>
         </div>
