@@ -1,11 +1,15 @@
 
 import { useState } from "react";
+
 import {
   Eye,
   EyeOff,
   Mail,
-  Lock,
+  LockKeyhole,
   Loader2,
+  Sparkles,
+  AlertCircle,
+  ArrowLeft,
 } from "lucide-react";
 
 import {
@@ -14,6 +18,7 @@ import {
 } from "react-router-dom";
 
 import AuthLayout from "../components/AuthLayout";
+
 import { supabase } from "../../../lib/supabaseClient";
 
 export default function LoginPage() {
@@ -29,317 +34,189 @@ export default function LoginPage() {
 
   const [error, setError] = useState("");
 
-  async function handleLogin(
-    e: React.FormEvent
-  ) {
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     setError("");
     setLoading(true);
 
-    const { error } =
-      await supabase.auth.signInWithPassword({
-        email,
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
         password,
       });
 
-    if (error) {
-      setError(
-        "البريد الإلكتروني أو كلمة المرور غير صحيحة"
-      );
+      if (error) {
+        setError("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+        return;
+      }
 
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      setError("حدث خطأ أثناء تسجيل الدخول. حاول مرة أخرى.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    navigate("/dashboard");
   }
 
   async function handleGoogleLogin() {
     setError("");
     setGoogleLoading(true);
 
-    const { error } =
-      await supabase.auth.signInWithOAuth({
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: "offline",
+            prompt: "select_account",
+          },
         },
       });
 
-    if (error) {
-      setError(
-        "تعذر تسجيل الدخول باستخدام Google. حاول مرة أخرى."
-      );
-
+      if (error) {
+        setError("تعذر تسجيل الدخول باستخدام Google. حاول مرة أخرى.");
+        setGoogleLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("حدث خطأ أثناء الاتصال بحساب Google.");
       setGoogleLoading(false);
     }
   }
 
+  const inputClass =
+    "w-full rounded-xl border border-white/10 bg-[#0B1224]/80 py-4 pr-11 pl-4 text-sm text-white placeholder:text-slate-500 outline-none transition duration-300 focus:border-cyan-400/60 focus:bg-[#111B32] focus:ring-4 focus:ring-cyan-400/10";
+
+  const iconClass =
+    "pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500";
+
   return (
     <AuthLayout
-      title="تسجيل الدخول"
-      subtitle="ادخل إلى حسابك في UniShare"
+      title="مرحباً بعودتك"
+      subtitle="واصل رحلتك في اكتشاف المعرفة ومشاركتها مع مجتمع UniShare"
     >
-      <form
-        onSubmit={handleLogin}
-        className="space-y-5"
-      >
-        {/* Email */}
-
+      <form onSubmit={handleLogin} className="space-y-6">
         <div>
-          <label
-            className="
-              block
-              text-sm
-              font-medium
-              text-gray-700
-              mb-2
-            "
-          >
+          <label className="mb-2 block text-sm font-semibold text-slate-200">
             البريد الإلكتروني
           </label>
 
           <div className="relative">
-            <Mail
-              size={20}
-              className="
-                absolute
-                left-3
-                top-3.5
-                text-gray-400
-              "
-            />
+            <Mail size={19} className={iconClass} />
 
             <input
               type="email"
               value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="example@email.com"
+              autoComplete="email"
               required
-              className="
-                w-full
-                rounded-xl
-                border
-                border-gray-300
-                py-3
-                pl-10
-                pr-4
-                outline-none
-                focus:ring-2
-                focus:ring-blue-500
-              "
+              className={inputClass}
             />
           </div>
         </div>
 
-        {/* Password */}
-
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <label
-              className="
-                block
-                text-sm
-                font-medium
-                text-gray-700
-              "
-            >
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <label className="text-sm font-semibold text-slate-200">
               كلمة المرور
             </label>
 
             <Link
               to="/forgot-password"
-              className="
-                text-sm
-                font-semibold
-                text-blue-600
-                hover:text-blue-700
-                transition
-              "
+              className="text-xs font-semibold text-cyan-300 transition hover:text-white"
             >
               نسيت كلمة المرور؟
             </Link>
           </div>
 
           <div className="relative">
-            <Lock
-              size={20}
-              className="
-                absolute
-                left-3
-                top-3.5
-                text-gray-400
-              "
-            />
+            <LockKeyhole size={19} className={iconClass} />
 
             <input
-              type={
-                showPassword
-                  ? "text"
-                  : "password"
-              }
+              type={showPassword ? "text" : "password"}
               value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-              placeholder="********"
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="أدخل كلمة المرور"
+              autoComplete="current-password"
               required
-              className="
-                w-full
-                rounded-xl
-                border
-                border-gray-300
-                py-3
-                pl-10
-                pr-12
-                outline-none
-                focus:ring-2
-                focus:ring-blue-500
-              "
+              className={`${inputClass} pl-12`}
             />
 
             <button
               type="button"
-              onClick={() =>
-                setShowPassword(!showPassword)
-              }
-              className="
-                absolute
-                right-3
-                top-3.5
-                text-gray-400
-              "
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-cyan-300"
             >
-              {showPassword ? (
-                <EyeOff size={20} />
-              ) : (
-                <Eye size={20} />
-              )}
+              {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
             </button>
           </div>
         </div>
 
-        {/* Error */}
-
         {error && (
-          <div
-            className="
-              rounded-lg
-              bg-red-50
-              text-red-600
-              p-3
-              text-sm
-            "
-          >
-            {error}
+          <div className="flex items-start gap-3 rounded-xl border border-red-400/20 bg-red-400/[0.07] p-3.5 text-sm leading-6 text-red-300">
+            <AlertCircle size={19} className="mt-0.5 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
-
-        {/* Login Button */}
 
         <button
           type="submit"
           disabled={loading || googleLoading}
-          className="
-            w-full
-            flex
-            justify-center
-            items-center
-            gap-2
-            rounded-xl
-            bg-blue-600
-            hover:bg-blue-700
-            text-white
-            py-3
-            font-semibold
-            transition
-            disabled:opacity-50
-          "
+          className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl bg-gradient-to-l from-blue-600 via-indigo-600 to-violet-600 py-4 text-sm font-black text-white shadow-lg shadow-blue-950/30 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-900/40 disabled:cursor-not-allowed disabled:opacity-60"
         >
+          <span className="absolute inset-0 translate-x-full bg-gradient-to-l from-white/0 via-white/10 to-white/0 transition-transform duration-700 group-hover:translate-x-[-100%]" />
+
           {loading ? (
             <>
-              <Loader2
-                size={20}
-                className="animate-spin"
-              />
-              جاري الدخول...
+              <Loader2 size={19} className="animate-spin" />
+              جاري تسجيل الدخول...
             </>
           ) : (
-            "دخول"
+            <>
+              <Sparkles size={18} />
+              تسجيل الدخول إلى UniShare
+              <ArrowLeft size={17} />
+            </>
           )}
         </button>
       </form>
 
-      {/* Separator */}
+      <div className="my-7 flex items-center gap-3">
+        <div className="h-px flex-1 bg-white/10" />
 
-      <div className="flex items-center gap-3 my-6">
-        <div className="flex-1 border-t border-gray-200" />
-        <span className="text-sm text-gray-400">
-          أو
-        </span>
-        <div className="flex-1 border-t border-gray-200" />
+        <span className="text-xs text-slate-500">أو تابع باستخدام</span>
+
+        <div className="h-px flex-1 bg-white/10" />
       </div>
-
-      {/* Google Login */}
 
       <button
         type="button"
         onClick={handleGoogleLogin}
         disabled={loading || googleLoading}
-        className="
-          w-full
-          flex
-          justify-center
-          items-center
-          gap-3
-          rounded-xl
-          border
-          border-gray-300
-          bg-white
-          hover:bg-gray-50
-          text-gray-700
-          py-3
-          font-semibold
-          transition
-          disabled:opacity-50
-        "
+        className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.06] py-3.5 font-semibold text-white transition hover:border-cyan-400/30 hover:bg-white/10 disabled:opacity-50"
       >
         {googleLoading ? (
-          <Loader2
-            size={20}
-            className="animate-spin"
-          />
+          <Loader2 size={20} className="animate-spin" />
         ) : (
-          <span className="text-xl font-bold">
-            <span className="text-blue-500">G</span>
-          </span>
+          <span className="text-xl font-bold text-cyan-300">G</span>
         )}
 
         المتابعة باستخدام Google
       </button>
 
-      <p
-        className="
-          text-center
-          text-sm
-          text-gray-500
-          mt-6
-        "
-      >
-        ليس لديك حساب؟
+      <p className="mt-8 text-center text-sm text-slate-400">
+        ليس لديك حساب بعد؟
 
         <Link
           to="/register"
-          className="
-            text-blue-600
-            font-semibold
-            ml-2
-          "
+          className="mr-2 font-bold text-cyan-300 transition hover:text-white"
         >
-          إنشاء حساب
+          انضم إلى UniShare
         </Link>
       </p>
     </AuthLayout>

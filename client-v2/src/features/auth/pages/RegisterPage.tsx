@@ -1,141 +1,47 @@
 
 import { useState } from "react";
 
-import {
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  User,
-  Loader2,
-} from "lucide-react";
+import { Link } from "react-router-dom";
 
-import {
-  Link,
-  useNavigate,
-} from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 import AuthLayout from "../components/AuthLayout";
 
-import {
-  supabase,
-} from "../../../lib/supabaseClient";
+import RegisterForm from "../../../auth/components/RegisterForm";
+
+import { supabase } from "../../../lib/supabaseClient";
 
 export default function RegisterPage() {
-  const navigate = useNavigate();
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState("");
 
-  const [error, setError] = useState("");
-
-  async function handleRegister(
-    e: React.FormEvent<HTMLFormElement>
-  ) {
-    e.preventDefault();
-
-    setError("");
-
-    if (password !== confirmPassword) {
-      setError("كلمتا المرور غير متطابقتين");
-      return;
-    }
-
-    setLoading(true);
+  async function handleGoogleRegister() {
+    setGoogleError("");
+    setGoogleLoading(true);
 
     try {
-      const {
-        data,
-        error,
-      } = await supabase.auth.signUp({
-        email,
-        password,
-
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
         options: {
-          data: {
-            full_name: name,
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: "offline",
+            prompt: "select_account",
           },
         },
       });
 
       if (error) {
-        if (
-          error.message.includes("rate limit")
-        ) {
-          setError(
-            "تم تجاوز عدد محاولات التسجيل. انتظر قليلاً ثم حاول مرة أخرى."
-          );
-        } else {
-          setError(error.message);
-        }
-
-        return;
-      }
-
-      if (data.user && data.session) {
-        localStorage.setItem(
-          "new_user_id",
-          data.user.id
-        );
-
-        navigate("/complete-profile");
-      } else if (data.user) {
-        setError(
-          "تم إنشاء الحساب. يرجى تأكيد البريد الإلكتروني ثم تسجيل الدخول."
-        );
-      } else {
-        setError("تعذر إنشاء الحساب");
-      }
-
-    } catch (err) {
-      console.error(err);
-
-      setError("حدث خطأ غير متوقع");
-
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleGoogleRegister() {
-    setError("");
-    setGoogleLoading(true);
-
-    try {
-      const { error } =
-        await supabase.auth.signInWithOAuth({
-          provider: "google",
-
-          options: {
-            redirectTo: `${window.location.origin}/dashboard`,
-            queryParams: {
-              access_type: "offline",
-              prompt: "select_account",
-            },
-          },
-        });
-
-      if (error) {
-        setError(
+        setGoogleError(
           "تعذر إنشاء الحساب باستخدام Google. حاول مرة أخرى."
         );
-
         setGoogleLoading(false);
       }
+    } catch (error) {
+      console.error(error);
 
-    } catch (err) {
-      console.error(err);
-
-      setError(
-        "حدث خطأ أثناء الاتصال بحساب Google"
+      setGoogleError(
+        "حدث خطأ أثناء الاتصال بحساب Google."
       );
 
       setGoogleLoading(false);
@@ -145,291 +51,45 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="إنشاء حساب"
-      subtitle="أنشئ حسابك في UniShare"
+      subtitle="انضم إلى مجتمع UniShare وابدأ رحلتك في مشاركة المعرفة"
     >
-      <form
-        onSubmit={handleRegister}
-        className="space-y-5"
-      >
-        {/* Full name */}
+      <RegisterForm />
 
-        <div>
-          <label className="block mb-2">
-            الاسم الكامل
-          </label>
+      <div className="my-6 flex items-center gap-3">
+        <div className="h-px flex-1 bg-white/10" />
 
-          <div className="relative">
-            <User
-              size={20}
-              className="
-                absolute
-                left-3
-                top-3
-                text-gray-400
-              "
-            />
+        <span className="text-xs text-slate-500">أو</span>
 
-            <input
-              required
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="
-                w-full
-                border
-                rounded-xl
-                p-3
-                pl-10
-              "
-            />
-          </div>
-        </div>
-
-        {/* Email */}
-
-        <div>
-          <label className="block mb-2">
-            البريد الإلكتروني
-          </label>
-
-          <div className="relative">
-            <Mail
-              size={20}
-              className="
-                absolute
-                left-3
-                top-3
-                text-gray-400
-              "
-            />
-
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="
-                w-full
-                border
-                rounded-xl
-                p-3
-                pl-10
-              "
-            />
-          </div>
-        </div>
-
-        {/* Password */}
-
-        <div>
-          <label className="block mb-2">
-            كلمة المرور
-          </label>
-
-          <div className="relative">
-            <Lock
-              size={20}
-              className="
-                absolute
-                left-3
-                top-3
-                text-gray-400
-              "
-            />
-
-            <input
-              type={
-                showPassword
-                  ? "text"
-                  : "password"
-              }
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="
-                w-full
-                border
-                rounded-xl
-                p-3
-                pl-10
-                pr-12
-              "
-            />
-
-            <button
-              type="button"
-              onClick={() =>
-                setShowPassword(!showPassword)
-              }
-              className="
-                absolute
-                right-3
-                top-3
-              "
-            >
-              {showPassword ? (
-                <EyeOff size={20} />
-              ) : (
-                <Eye size={20} />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Confirm password */}
-
-        <div>
-          <label className="block mb-2">
-            تأكيد كلمة المرور
-          </label>
-
-          <div className="relative">
-            <input
-              type={
-                showConfirm
-                  ? "text"
-                  : "password"
-              }
-              required
-              value={confirmPassword}
-              onChange={e =>
-                setConfirmPassword(e.target.value)
-              }
-              className="
-                w-full
-                border
-                rounded-xl
-                p-3
-                pr-12
-              "
-            />
-
-            <button
-              type="button"
-              onClick={() =>
-                setShowConfirm(!showConfirm)
-              }
-              className="
-                absolute
-                right-3
-                top-3
-              "
-            >
-              {showConfirm ? (
-                <EyeOff size={20} />
-              ) : (
-                <Eye size={20} />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Error */}
-
-        {error && (
-          <div
-            className="
-              bg-red-50
-              text-red-600
-              rounded-xl
-              p-3
-              text-sm
-            "
-          >
-            {error}
-          </div>
-        )}
-
-        {/* Register Button */}
-
-        <button
-          type="submit"
-          disabled={loading || googleLoading}
-          className="
-            w-full
-            bg-blue-600
-            hover:bg-blue-700
-            text-white
-            py-3
-            rounded-xl
-            font-bold
-            flex
-            justify-center
-            items-center
-            gap-2
-            disabled:opacity-50
-          "
-        >
-          {loading ? (
-            <>
-              <Loader2 className="animate-spin" />
-              جاري إنشاء الحساب...
-            </>
-          ) : (
-            "إنشاء حساب"
-          )}
-        </button>
-      </form>
-
-      {/* Separator */}
-
-      <div className="flex items-center gap-3 my-6">
-        <div className="flex-1 border-t border-gray-200" />
-
-        <span className="text-sm text-gray-400">
-          أو
-        </span>
-
-        <div className="flex-1 border-t border-gray-200" />
+        <div className="h-px flex-1 bg-white/10" />
       </div>
 
-      {/* Google Register */}
+      {googleError && (
+        <div className="mb-4 rounded-xl border border-red-400/20 bg-red-400/[0.07] p-3 text-sm text-red-300">
+          {googleError}
+        </div>
+      )}
 
       <button
         type="button"
         onClick={handleGoogleRegister}
-        disabled={loading || googleLoading}
-        className="
-          w-full
-          flex
-          justify-center
-          items-center
-          gap-3
-          rounded-xl
-          border
-          border-gray-300
-          bg-white
-          hover:bg-gray-50
-          text-gray-700
-          py-3
-          font-semibold
-          transition
-          disabled:opacity-50
-        "
+        disabled={googleLoading}
+        className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.06] py-3.5 font-semibold text-white transition hover:border-cyan-400/30 hover:bg-white/10 disabled:opacity-50"
       >
         {googleLoading ? (
-          <Loader2
-            size={20}
-            className="animate-spin"
-          />
+          <Loader2 size={20} className="animate-spin" />
         ) : (
-          <span className="text-xl font-bold text-blue-500">
-            G
-          </span>
+          <span className="text-xl font-bold text-cyan-300">G</span>
         )}
 
         إنشاء حساب باستخدام Google
       </button>
 
-      <p className="text-center mt-6">
-        لديك حساب؟
+      <p className="mt-8 text-center text-sm text-slate-400">
+        لديك حساب بالفعل؟
 
         <Link
           to="/login"
-          className="
-            text-blue-600
-            font-bold
-            ml-2
-          "
+          className="mr-2 font-bold text-cyan-300 transition hover:text-white"
         >
           تسجيل الدخول
         </Link>
