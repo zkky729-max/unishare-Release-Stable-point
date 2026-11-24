@@ -1,3 +1,6 @@
+
+import { useState } from "react";
+
 import type {
   UserSearchResult,
 } from "../api/searchUsers";
@@ -8,65 +11,33 @@ import type {
 
 interface UserCardProps {
   user: UserSearchResult;
-
   children?: React.ReactNode;
 }
 
 // =====================================================
 // USER CARD
 // =====================================================
-//
-// بطاقة عرض مستخدم من نتائج البحث العام.
-//
-// مسؤوليتها:
-// - عرض الصورة
-// - عرض الاسم
-// - عرض username
-// - عرض bio
-//
-// لا تحتوي على منطق الصداقة.
-// يمكن تمرير FriendAction عبر children.
-// =====================================================
 
 export default function UserCard({
   user,
   children,
 }: UserCardProps) {
-  // ---------------------------------------------------
-  // الاسم المعروض
-  // ---------------------------------------------------
-
   const displayName =
     user.fullName?.trim() ||
     user.username?.trim() ||
     "مستخدم UniShare";
 
-  // ---------------------------------------------------
-  // username
-  // ---------------------------------------------------
-
   const username =
     user.username?.trim() || null;
 
-  // ---------------------------------------------------
-  // الأحرف الأولى عند عدم وجود صورة
-  // ---------------------------------------------------
+  const [imageError, setImageError] =
+    useState(false);
 
-  const initials =
-    displayName
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map(
-        (part) =>
-          part.charAt(0)
-      )
-      .join("")
-      .toUpperCase() || "U";
+  const avatarUrl =
+    user.avatarUrl?.trim() || null;
 
-  // ---------------------------------------------------
-  // Render
-  // ---------------------------------------------------
+  const showDefaultAvatar =
+    !avatarUrl || imageError;
 
   return (
     <article
@@ -83,34 +54,19 @@ export default function UserCard({
         hover:bg-accent/50
       "
     >
-      {/* =================================================
-          AVATAR
-      ================================================= */}
+      {/* Avatar */}
 
       <div
         className="
-          flex
           h-12
           w-12
           shrink-0
-          items-center
-          justify-center
           overflow-hidden
           rounded-full
           bg-muted
         "
       >
-        {user.avatarUrl ? (
-          <img
-            src={user.avatarUrl}
-            alt={displayName}
-            className="
-              h-full
-              w-full
-              object-cover
-            "
-          />
-        ) : (
+        {showDefaultAvatar ? (
           <div
             className="
               flex
@@ -118,30 +74,35 @@ export default function UserCard({
               w-full
               items-center
               justify-center
-              text-sm
-              font-semibold
-              text-muted-foreground
+              rounded-full
+              bg-blue-600
+              text-2xl
+              font-bold
+              leading-none
+              text-white
             "
+            aria-label="الصورة الشخصية الافتراضية"
           >
-            {initials}
+            ?
           </div>
+        ) : (
+          <img
+            src={avatarUrl}
+            alt={displayName}
+            loading="lazy"
+            className="
+              h-full
+              w-full
+              object-cover
+            "
+            onError={() => setImageError(true)}
+          />
         )}
       </div>
 
-      {/* =================================================
-          USER INFO
-      ================================================= */}
+      {/* User Info */}
 
-      <div
-        className="
-          min-w-0
-          flex-1
-        "
-      >
-        {/* -------------------------------------------------
-            FULL NAME
-        ------------------------------------------------- */}
-
+      <div className="min-w-0 flex-1">
         <div
           className="
             truncate
@@ -152,10 +113,6 @@ export default function UserCard({
         >
           {displayName}
         </div>
-
-        {/* -------------------------------------------------
-            USERNAME
-        ------------------------------------------------- */}
 
         {username && (
           <div
@@ -169,10 +126,6 @@ export default function UserCard({
             @{username}
           </div>
         )}
-
-        {/* -------------------------------------------------
-            BIO
-        ------------------------------------------------- */}
 
         {user.bio?.trim() && (
           <p
@@ -188,16 +141,10 @@ export default function UserCard({
         )}
       </div>
 
-      {/* =================================================
-          ACTION
-      ================================================= */}
+      {/* Action */}
 
       {children && (
-        <div
-          className="
-            shrink-0
-          "
-        >
+        <div className="shrink-0">
           {children}
         </div>
       )}

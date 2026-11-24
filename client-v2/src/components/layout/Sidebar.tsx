@@ -28,8 +28,6 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const DEFAULT_AVATAR = "/avatars/default.png";
-
 export default function Sidebar({ onClose }: SidebarProps) {
   const navigate = useNavigate();
 
@@ -45,7 +43,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     "مستخدم";
 
   const avatar =
-    profile?.avatar_url?.trim() || DEFAULT_AVATAR;
+    profile?.avatar_url?.trim() || null;
 
   // Role label
   const roleLabel =
@@ -513,26 +511,46 @@ export default function Sidebar({ onClose }: SidebarProps) {
             {/* Unified Avatar */}
 
             <div className="relative shrink-0">
-              <img
-                src={avatar}
-                alt={displayName}
-                className="
-                  h-10
-                  w-10
-                  rounded-xl
-                  object-cover
-                  ring-2
-                  ring-white
-                  dark:ring-slate-800
-                "
-                onError={(event) => {
-                  const image = event.currentTarget;
-
-                  if (!image.src.endsWith(DEFAULT_AVATAR)) {
-                    image.src = DEFAULT_AVATAR;
-                  }
-                }}
-              />
+              {avatar ? (
+                <img
+                  src={avatar}
+                  alt={displayName}
+                  className="
+                    h-10
+                    w-10
+                    rounded-xl
+                    object-cover
+                    ring-2
+                    ring-white
+                    dark:ring-slate-800
+                  "
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : (
+                <div
+                  className="
+                    flex
+                    h-10
+                    w-10
+                    items-center
+                    justify-center
+                    rounded-xl
+                    bg-blue-600
+                    text-2xl
+                    font-bold
+                    leading-none
+                    text-white
+                    ring-2
+                    ring-white
+                    dark:ring-slate-800
+                  "
+                  aria-label="الصورة الشخصية الافتراضية"
+                >
+                  ?
+                </div>
+              )}
 
               <span
                 className="

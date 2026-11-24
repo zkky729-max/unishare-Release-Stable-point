@@ -1,9 +1,11 @@
+
 import {
   Bell,
   MessageCircle,
   Search,
   UserPlus,
   X,
+  Menu,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +23,11 @@ interface NotificationData {
   unreadMessagesCount: number;
 }
 
-export default function Navbar() {
+interface NavbarProps {
+  onMenuClick?: () => void;
+}
+
+export default function Navbar({ onMenuClick }: NavbarProps) {
   const navigate = useNavigate();
 
   // =====================================================
@@ -44,8 +50,7 @@ export default function Navbar() {
   // MAIN SEARCH
   // =====================================================
 
-  const [searchQuery, setSearchQuery] =
-    useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [searchResults, setSearchResults] =
     useState<UserSearchResult[]>([]);
@@ -53,8 +58,7 @@ export default function Navbar() {
   const [showSearchResults, setShowSearchResults] =
     useState(false);
 
-  const [searchLoading, setSearchLoading] =
-    useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // =====================================================
   // LOAD NOTIFICATIONS
@@ -77,9 +81,7 @@ export default function Navbar() {
         conversations.reduce(
           (total, conversation) =>
             total +
-            Number(
-              conversation.unread_count ?? 0
-            ),
+            Number(conversation.unread_count ?? 0),
           0
         );
 
@@ -118,8 +120,7 @@ export default function Navbar() {
   // =====================================================
 
   useEffect(() => {
-    const normalizedQuery =
-      searchQuery.trim();
+    const normalizedQuery = searchQuery.trim();
 
     if (normalizedQuery.length < 2) {
       setSearchResults([]);
@@ -137,9 +138,7 @@ export default function Navbar() {
           setShowSearchResults(true);
 
           const results =
-            await searchUsers(
-              normalizedQuery
-            );
+            await searchUsers(normalizedQuery);
 
           if (cancelled) {
             return;
@@ -210,9 +209,7 @@ export default function Navbar() {
   // OPEN SEARCHED USER PROFILE
   // =====================================================
 
-  function handleUserProfile(
-    userId: string
-  ) {
+  function handleUserProfile(userId: string) {
     if (!userId) {
       return;
     }
@@ -244,16 +241,50 @@ export default function Navbar() {
         min-h-[76px]
         items-center
         justify-between
-        gap-4
+        gap-3
         border-b
         border-[var(--unishare-border)]
         bg-white/90
-        px-4
+        px-3
         py-3
         backdrop-blur-xl
+        sm:gap-4
         sm:px-6
       "
     >
+      {/* =====================================================
+          MOBILE MENU BUTTON
+      ===================================================== */}
+
+      <button
+        type="button"
+        onClick={() => onMenuClick?.()}
+        aria-label="فتح القائمة"
+        className="
+          flex
+          h-11
+          w-11
+          shrink-0
+          items-center
+          justify-center
+          rounded-xl
+          border
+          border-[var(--unishare-border)]
+          bg-white
+          text-[var(--unishare-text)]
+          transition
+          hover:border-blue-200
+          hover:bg-blue-50
+          hover:text-blue-600
+          focus:outline-none
+          focus:ring-4
+          focus:ring-blue-500/10
+          lg:hidden
+        "
+      >
+        <Menu size={23} strokeWidth={2} />
+      </button>
+
       {/* =====================================================
           MOBILE LOGO
       ===================================================== */}
@@ -294,14 +325,10 @@ export default function Navbar() {
           type="search"
           value={searchQuery}
           onChange={(event) => {
-            setSearchQuery(
-              event.target.value
-            );
+            setSearchQuery(event.target.value);
           }}
           onFocus={() => {
-            if (
-              searchQuery.trim().length >= 2
-            ) {
+            if (searchQuery.trim().length >= 2) {
               setShowSearchResults(true);
             }
           }}
@@ -372,93 +399,87 @@ export default function Navbar() {
               {!searchLoading &&
                 searchResults.length > 0 && (
                   <div className="max-h-[360px] overflow-y-auto p-2">
-                    {searchResults.map(
-                      (user) => (
-                        <button
-                          key={user.userId}
-                          type="button"
-                          onClick={() =>
-                            handleUserProfile(
-                              user.userId
+                    {searchResults.map((user) => (
+                      <button
+                        key={user.userId}
+                        type="button"
+                        onClick={() =>
+                          handleUserProfile(user.userId)
+                        }
+                        className="
+                          flex
+                          w-full
+                          items-center
+                          gap-3
+                          rounded-xl
+                          p-3
+                          text-right
+                          transition
+                          hover:bg-blue-50
+                        "
+                      >
+                        {/* Avatar */}
+
+                        {user.avatarUrl ? (
+                          <img
+                            src={user.avatarUrl}
+                            alt={
+                              user.fullName ??
+                              user.username ??
+                              "المستخدم"
+                            }
+                            className="
+                              h-10
+                              w-10
+                              shrink-0
+                              rounded-full
+                              object-cover
+                            "
+                          />
+                        ) : (
+                          <div
+                            className="
+                              flex
+                              h-10
+                              w-10
+                              shrink-0
+                              items-center
+                              justify-center
+                              rounded-full
+                              bg-blue-100
+                              text-sm
+                              font-bold
+                              text-blue-600
+                            "
+                          >
+                            {(
+                              user.fullName ??
+                              user.username ??
+                              "U"
                             )
-                          }
-                          className="
-                            flex
-                            w-full
-                            items-center
-                            gap-3
-                            rounded-xl
-                            p-3
-                            text-right
-                            transition
-                            hover:bg-blue-50
-                          "
-                        >
-                          {/* Avatar */}
-
-                          {user.avatarUrl ? (
-                            <img
-                              src={
-                                user.avatarUrl
-                              }
-                              alt={
-                                user.fullName ??
-                                user.username ??
-                                "المستخدم"
-                              }
-                              className="
-                                h-10
-                                w-10
-                                shrink-0
-                                rounded-full
-                                object-cover
-                              "
-                            />
-                          ) : (
-                            <div
-                              className="
-                                flex
-                                h-10
-                                w-10
-                                shrink-0
-                                items-center
-                                justify-center
-                                rounded-full
-                                bg-blue-100
-                                text-sm
-                                font-bold
-                                text-blue-600
-                              "
-                            >
-                              {(
-                                user.fullName ??
-                                user.username ??
-                                "U"
-                              )
-                                .trim()
-                                .charAt(0)
-                                .toUpperCase()}
-                            </div>
-                          )}
-
-                          {/* User Info */}
-
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-bold text-gray-800">
-                              {user.fullName ||
-                                user.username ||
-                                "مستخدم"}
-                            </p>
-
-                            {user.username && (
-                              <p className="mt-0.5 truncate text-xs text-gray-500">
-                                @{user.username}
-                              </p>
-                            )}
+                              .trim()
+                              .charAt(0)
+                              .toUpperCase()}
                           </div>
-                        </button>
-                      )
-                    )}
+                        )}
+
+                        {/* User Info */}
+
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-gray-800">
+                            {user.fullName ||
+                              user.username ||
+                              "مستخدم"}
+                          </p>
+
+                          {user.username && (
+                            <p className="mt-0.5 truncate text-xs text-gray-500">
+                              @{user.username}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 )}
             </div>
@@ -487,9 +508,7 @@ export default function Navbar() {
             type="button"
             aria-label="الإشعارات"
             onClick={() =>
-              setShowNotifications(
-                (current) => !current
-              )
+              setShowNotifications((current) => !current)
             }
             className="
               relative
@@ -589,9 +608,7 @@ export default function Navbar() {
 
                 <button
                   type="button"
-                  onClick={
-                    closeNotifications
-                  }
+                  onClick={closeNotifications}
                   className="
                     flex
                     h-8
@@ -633,147 +650,129 @@ export default function Navbar() {
                     </div>
                   )}
 
-                {notifications.friendRequestsCount >
-                  0 && (
-                    <button
-                      type="button"
-                      onClick={
-                        handleFriendRequests
-                      }
+                {notifications.friendRequestsCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleFriendRequests}
+                    className="
+                      flex
+                      w-full
+                      items-center
+                      gap-3
+                      rounded-xl
+                      p-3
+                      text-right
+                      transition
+                      hover:bg-blue-50
+                    "
+                  >
+                    <div
                       className="
                         flex
-                        w-full
+                        h-10
+                        w-10
+                        shrink-0
                         items-center
-                        gap-3
+                        justify-center
                         rounded-xl
-                        p-3
-                        text-right
-                        transition
-                        hover:bg-blue-50
+                        bg-blue-50
+                        text-blue-600
                       "
                     >
-                      <div
-                        className="
-                          flex
-                          h-10
-                          w-10
-                          shrink-0
-                          items-center
-                          justify-center
-                          rounded-xl
-                          bg-blue-50
-                          text-blue-600
-                        "
-                      >
-                        <UserPlus size={19} />
-                      </div>
+                      <UserPlus size={19} />
+                    </div>
 
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-gray-800">
-                          طلبات صداقة جديدة
-                        </p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-gray-800">
+                        طلبات صداقة جديدة
+                      </p>
 
-                        <p className="mt-0.5 text-xs text-gray-500">
-                          لديك{" "}
-                          {
-                            notifications.friendRequestsCount
-                          }{" "}
-                          طلب صداقة بانتظارك
-                        </p>
-                      </div>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        لديك {notifications.friendRequestsCount} طلب صداقة بانتظارك
+                      </p>
+                    </div>
 
-                      <span
-                        className="
-                          flex
-                          h-6
-                          min-w-6
-                          items-center
-                          justify-center
-                          rounded-full
-                          bg-blue-600
-                          px-1.5
-                          text-xs
-                          font-bold
-                          text-white
-                        "
-                      >
-                        {
-                          notifications.friendRequestsCount
-                        }
-                      </span>
-                    </button>
-                  )}
-
-                {notifications.unreadMessagesCount >
-                  0 && (
-                    <button
-                      type="button"
-                      onClick={
-                        handleMessages
-                      }
+                    <span
                       className="
                         flex
-                        w-full
+                        h-6
+                        min-w-6
                         items-center
-                        gap-3
-                        rounded-xl
-                        p-3
-                        text-right
-                        transition
-                        hover:bg-purple-50
+                        justify-center
+                        rounded-full
+                        bg-blue-600
+                        px-1.5
+                        text-xs
+                        font-bold
+                        text-white
                       "
                     >
-                      <div
-                        className="
-                          flex
-                          h-10
-                          w-10
-                          shrink-0
-                          items-center
-                          justify-center
-                          rounded-xl
-                          bg-purple-50
-                          text-purple-600
-                        "
-                      >
-                        <MessageCircle size={19} />
-                      </div>
+                      {notifications.friendRequestsCount}
+                    </span>
+                  </button>
+                )}
 
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-gray-800">
-                          رسائل غير مقروءة
-                        </p>
+                {notifications.unreadMessagesCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMessages}
+                    className="
+                      flex
+                      w-full
+                      items-center
+                      gap-3
+                      rounded-xl
+                      p-3
+                      text-right
+                      transition
+                      hover:bg-purple-50
+                    "
+                  >
+                    <div
+                      className="
+                        flex
+                        h-10
+                        w-10
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-xl
+                        bg-purple-50
+                        text-purple-600
+                      "
+                    >
+                      <MessageCircle size={19} />
+                    </div>
 
-                        <p className="mt-0.5 text-xs text-gray-500">
-                          لديك{" "}
-                          {
-                            notifications.unreadMessagesCount
-                          }{" "}
-                          رسالة غير مقروءة
-                        </p>
-                      </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-gray-800">
+                        رسائل غير مقروءة
+                      </p>
 
-                      <span
-                        className="
-                          flex
-                          h-6
-                          min-w-6
-                          items-center
-                          justify-center
-                          rounded-full
-                          bg-purple-600
-                          px-1.5
-                          text-xs
-                          font-bold
-                          text-white
-                        "
-                      >
-                        {
-                          notifications.unreadMessagesCount
-                        }
-                      </span>
-                    </button>
-                  )}
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        لديك {notifications.unreadMessagesCount} رسالة غير مقروءة
+                      </p>
+                    </div>
+
+                    <span
+                      className="
+                        flex
+                        h-6
+                        min-w-6
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-purple-600
+                        px-1.5
+                        text-xs
+                        font-bold
+                        text-white
+                      "
+                    >
+                      {notifications.unreadMessagesCount}
+                    </span>
+                  </button>
+                )}
               </div>
 
               {totalNotifications > 0 && (
