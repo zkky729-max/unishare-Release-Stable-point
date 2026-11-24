@@ -9,6 +9,8 @@ import {
   Loader2,
   ImagePlus,
   ArrowRight,
+  Building2,
+  BookOpen,
 } from "lucide-react";
 
 import { supabase } from "../../../lib/supabaseClient";
@@ -31,6 +33,7 @@ export default function EditProfile() {
   const [bio, setBio] = useState("");
   const [age, setAge] = useState("");
 
+  const [universityId, setUniversityId] = useState("");
   const [facultyId, setFacultyId] = useState("");
   const [specialtyId, setSpecialtyId] = useState("");
 
@@ -39,8 +42,13 @@ export default function EditProfile() {
   const [selectedFileName, setSelectedFileName] = useState("");
   const [avatarError, setAvatarError] = useState(false);
 
+  const [universities, setUniversities] = useState<Item[]>([]);
   const [faculties, setFaculties] = useState<Item[]>([]);
   const [specialties, setSpecialties] = useState<Item[]>([]);
+
+  const [loadingUniversities, setLoadingUniversities] = useState(false);
+  const [loadingFaculties, setLoadingFaculties] = useState(false);
+  const [loadingSpecialties, setLoadingSpecialties] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -52,24 +60,76 @@ export default function EditProfile() {
     };
   }, []);
 
+  async function loadUniversities() {
+    setLoadingUniversities(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("universities")
+        .select("id,name")
+        .order("name");
+
+      if (error) throw error;
+
+      setUniversities(data || []);
+    } finally {
+      setLoadingUniversities(false);
+    }
+  }
+
+  async function loadFaculties(university: string) {
+    setFacultyId("");
+    setSpecialtyId("");
+    setFaculties([]);
+    setSpecialties([]);
+
+    if (!university) return;
+
+    setLoadingFaculties(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("faculties")
+        .select("id,name")
+        .eq("university_id", university)
+        .order("name");
+
+      if (error) throw error;
+
+      setFaculties(data || []);
+    } catch (error) {
+      console.error("Load faculties error:", error);
+      alert("تعذر تحميل كليات الجامعة.");
+    } finally {
+      setLoadingFaculties(false);
+    }
+  }
+
   async function loadSpecialties(faculty: string) {
-    if (!faculty) {
-      setSpecialties([]);
-      return;
-    }
+    setFacultyId(faculty);
+    setSpecialtyId("");
+    setSpecialties([]);
 
-    const { data, error } = await supabase
-      .from("specialties")
-      .select("id,name")
-      .eq("faculty_id", faculty)
-      .order("name");
+    if (!faculty) return;
 
-    if (error) {
+    setLoadingSpecialties(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("specialties")
+        .select("id,name")
+        .eq("faculty_id", faculty)
+        .order("name");
+
+      if (error) throw error;
+
+      setSpecialties(data || []);
+    } catch (error) {
       console.error("Load specialties error:", error);
-      return;
+      alert("تعذر تحميل التخصصات.");
+    } finally {
+      setLoadingSpecialties(false);
     }
-
-    setSpecialties(data || []);
   }
 
   async function loadProfile() {
@@ -91,32 +151,64 @@ export default function EditProfile() {
 
       if (error) throw error;
 
+      await loadUniversities();
+
       if (profile) {
         setFullName(profile.full_name ?? "");
         setUsername(profile.username ?? "");
         setBio(profile.bio ?? "");
         setAge(profile.age ? String(profile.age) : "");
 
-        setFacultyId(profile.faculty_id ?? "");
-        setSpecialtyId(profile.specialty_id ?? "");
-
         setPreview(profile.avatar_url ?? "");
         setAvatarError(false);
 
-        if (profile.faculty_id) {
-          await loadSpecialties(profile.faculty_id);
+        let savedUniversityId = profile.university_id ?? "";
+
+        // دعم الحسابات القديمة التي لا تحتوي على university_id
+        if (!savedUniversityId && profile.faculty_id) {
+          const { data: facultyData, error: facultyError } =
+            await supabase
+              .from("faculties")
+              .select("university_id")
+              .eq("id", profile.faculty_id)
+              .maybeSingle();
+
+          if (facultyError) throw facultyError;
+
+          savedUniversityId = facultyData?.university_id ?? "";
+        }
+
+        setUniversityId(savedUniversityId);
+
+        if (savedUniversityId) {
+          const { data: facultyData, error: facultyError } =
+            await supabase
+              .from("faculties")
+              .select("id,name")
+              .eq("university_id", savedUniversityId)
+              .order("name");
+
+          if (facultyError) throw facultyError;
+
+          setFaculties(facultyData || []);
+
+          if (profile.faculty_id) {
+            setFacultyId(profile.faculty_id);
+
+            const { data: specialtyData, error: specialtyError } =
+              await supabase
+                .from("specialties")
+                .select("id,name")
+                .eq("faculty_id", profile.faculty_id)
+                .order("name");
+
+            if (specialtyError) throw specialtyError;
+
+            setSpecialties(specialtyData || []);
+            setSpecialtyId(profile.specialty_id ?? "");
+          }
         }
       }
-
-      const { data: facultyData, error: facultyError } =
-        await supabase
-          .from("faculties")
-          .select("id,name")
-          .order("name");
-
-      if (facultyError) throw facultyError;
-
-      setFaculties(facultyData || []);
     } catch (error) {
       console.error("Load profile error:", error);
       alert("تعذر تحميل بيانات الملف الشخصي.");
@@ -209,6 +301,7 @@ export default function EditProfile() {
           username: username.trim(),
           bio: bio.trim(),
           age: age ? Number(age) : null,
+          university_id: universityId || null,
           faculty_id: facultyId || null,
           specialty_id: specialtyId || null,
           avatar_url: avatarUrl || null,
@@ -255,6 +348,7 @@ export default function EditProfile() {
     placeholder:text-slate-400
     focus:border-blue-500 focus:bg-white
     focus:ring-4 focus:ring-blue-500/10
+    disabled:cursor-not-allowed disabled:opacity-60
     dark:border-slate-700 dark:bg-slate-800
     dark:text-white dark:focus:bg-slate-800
   `;
@@ -328,19 +422,11 @@ export default function EditProfile() {
               ) : (
                 <div
                   className="
-                    flex
-                    h-32
-                    w-32
-                    items-center
-                    justify-center
-                    rounded-full
-                    bg-blue-600
-                    text-6xl
-                    font-bold
-                    leading-none
-                    text-white
-                    sm:h-40
-                    sm:w-40
+                    flex h-32 w-32 items-center
+                    justify-center rounded-full
+                    bg-blue-600 text-6xl font-bold
+                    leading-none text-white
+                    sm:h-40 sm:w-40
                   "
                   aria-label="الصورة الشخصية الافتراضية"
                 >
@@ -520,60 +606,165 @@ export default function EditProfile() {
               المعلومات الجامعية
             </h2>
             <p className="mt-1 text-xs text-slate-500">
-              حدّد الكلية والتخصص الذي تنتمي إليه
+              حدّد الجامعة والكلية والتخصص الذي تنتمي إليه
             </p>
           </div>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-5">
+
+          {/* University */}
+
+          <div>
+            <label className={labelClass}>
+              الجامعة
+            </label>
+
+            <div className="relative">
+              <Building2
+                size={19}
+                className="
+                  absolute right-4 top-1/2
+                  -translate-y-1/2 text-blue-500
+                "
+              />
+
+              <select
+                value={universityId}
+                disabled={loadingUniversities}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setUniversityId(value);
+                  void loadFaculties(value);
+                }}
+                className={`${inputClass} pr-12`}
+              >
+                <option value="">
+                  {loadingUniversities
+                    ? "جارٍ تحميل الجامعات..."
+                    : "اختر الجامعة"}
+                </option>
+
+                {universities.map((university) => (
+                  <option key={university.id} value={university.id}>
+                    {university.name}
+                  </option>
+                ))}
+              </select>
+
+              {loadingUniversities && (
+                <Loader2
+                  size={17}
+                  className="
+                    absolute left-4 top-1/2
+                    -translate-y-1/2 animate-spin
+                    text-blue-500
+                  "
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Faculty */}
+
           <div>
             <label className={labelClass}>
               الكلية
             </label>
 
-            <select
-              value={facultyId}
-              onChange={(e) => {
-                const value = e.target.value;
-                setFacultyId(value);
-                setSpecialtyId("");
-                loadSpecialties(value);
-              }}
-              className={inputClass}
-            >
-              <option value="">اختر الكلية</option>
+            <div className="relative">
+              <GraduationCap
+                size={19}
+                className="
+                  absolute right-4 top-1/2
+                  -translate-y-1/2 text-indigo-500
+                "
+              />
 
-              {faculties.map((faculty) => (
-                <option key={faculty.id} value={faculty.id}>
-                  {faculty.name}
+              <select
+                value={facultyId}
+                disabled={!universityId || loadingFaculties}
+                onChange={(e) => {
+                  void loadSpecialties(e.target.value);
+                }}
+                className={`${inputClass} pr-12`}
+              >
+                <option value="">
+                  {!universityId
+                    ? "اختر الجامعة أولاً"
+                    : loadingFaculties
+                      ? "جارٍ تحميل الكليات..."
+                      : "اختر الكلية"}
                 </option>
-              ))}
-            </select>
+
+                {faculties.map((faculty) => (
+                  <option key={faculty.id} value={faculty.id}>
+                    {faculty.name}
+                  </option>
+                ))}
+              </select>
+
+              {loadingFaculties && (
+                <Loader2
+                  size={17}
+                  className="
+                    absolute left-4 top-1/2
+                    -translate-y-1/2 animate-spin
+                    text-blue-500
+                  "
+                />
+              )}
+            </div>
           </div>
+
+          {/* Specialty */}
 
           <div>
             <label className={labelClass}>
               التخصص
             </label>
 
-            <select
-              value={specialtyId}
-              disabled={!facultyId}
-              onChange={(e) => setSpecialtyId(e.target.value)}
-              className={`
-                ${inputClass}
-                disabled:cursor-not-allowed
-                disabled:opacity-50
-              `}
-            >
-              <option value="">اختر التخصص</option>
+            <div className="relative">
+              <BookOpen
+                size={19}
+                className="
+                  absolute right-4 top-1/2
+                  -translate-y-1/2 text-violet-500
+                "
+              />
 
-              {specialties.map((specialty) => (
-                <option key={specialty.id} value={specialty.id}>
-                  {specialty.name}
+              <select
+                value={specialtyId}
+                disabled={!facultyId || loadingSpecialties}
+                onChange={(e) => setSpecialtyId(e.target.value)}
+                className={`${inputClass} pr-12`}
+              >
+                <option value="">
+                  {!facultyId
+                    ? "اختر الكلية أولاً"
+                    : loadingSpecialties
+                      ? "جارٍ تحميل التخصصات..."
+                      : "اختر التخصص"}
                 </option>
-              ))}
-            </select>
+
+                {specialties.map((specialty) => (
+                  <option key={specialty.id} value={specialty.id}>
+                    {specialty.name}
+                  </option>
+                ))}
+              </select>
+
+              {loadingSpecialties && (
+                <Loader2
+                  size={17}
+                  className="
+                    absolute left-4 top-1/2
+                    -translate-y-1/2 animate-spin
+                    text-blue-500
+                  "
+                />
+              )}
+            </div>
           </div>
         </div>
       </section>
