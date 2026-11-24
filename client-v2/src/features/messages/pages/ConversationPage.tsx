@@ -88,6 +88,7 @@ export default function ConversationPage() {
   // REFS
   // =====================================================
 
+  const pageContainerRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -99,6 +100,46 @@ export default function ConversationPage() {
   const currentProfileIdRef = useRef<string | null>(null);
   const conversationIdRef = useRef<string | undefined>(conversationId);
   const isInitialLoadRef = useRef(true);
+
+  // =====================================================
+  // ANDROID KEYBOARD / VISUAL VIEWPORT
+  // =====================================================
+
+  useEffect(() => {
+    const container = pageContainerRef.current;
+
+    if (!container) return;
+
+    const viewport = window.visualViewport;
+
+    const updateAvailableHeight = () => {
+      const containerTop = container.getBoundingClientRect().top;
+
+      const viewportHeight = viewport?.height ?? window.innerHeight;
+      const viewportOffsetTop = viewport?.offsetTop ?? 0;
+
+      const availableHeight = Math.max(
+        0,
+        viewportHeight + viewportOffsetTop - containerTop
+      );
+
+      container.style.height = `${availableHeight}px`;
+    };
+
+    updateAvailableHeight();
+
+    viewport?.addEventListener("resize", updateAvailableHeight);
+    viewport?.addEventListener("scroll", updateAvailableHeight);
+
+    window.addEventListener("resize", updateAvailableHeight);
+
+    return () => {
+      viewport?.removeEventListener("resize", updateAvailableHeight);
+      viewport?.removeEventListener("scroll", updateAvailableHeight);
+
+      window.removeEventListener("resize", updateAvailableHeight);
+    };
+  }, []);
 
   // =====================================================
   // KEEP REFS UPDATED
@@ -549,10 +590,11 @@ export default function ConversationPage() {
 
   return (
     <div
+      ref={pageContainerRef}
       dir="rtl"
       className="h-full min-h-0 w-full overflow-hidden bg-[#f0f2f5] dark:bg-[#111b21] sm:flex sm:items-center sm:justify-center sm:p-4"
     >
-      <div className="flex h-full w-full flex-col overflow-hidden bg-[#f0f2f5] dark:bg-[#111b21] sm:max-w-4xl sm:rounded-2xl sm:border sm:border-border/60 sm:bg-background sm:shadow-xl">
+      <div className="flex h-full w-full min-h-0 flex-col overflow-hidden bg-[#f0f2f5] dark:bg-[#111b21] sm:max-w-4xl sm:rounded-2xl sm:border sm:border-border/60 sm:bg-background sm:shadow-xl">
 
         {/* MESSENGER HEADER */}
 
@@ -761,7 +803,7 @@ export default function ConversationPage() {
                   rows={1}
                   maxLength={5000}
                   placeholder="Aa"
-                  className="max-h-32 min-h-[30px] flex-1 resize-none overflow-y-auto bg-transparent py-1.5 text-[15px] leading-6 text-[#050505] outline-none placeholder:text-gray-500 disabled:cursor-not-allowed dark:text-white dark:placeholder:text-gray-400"
+                  className="max-h-32 min-h-[30px] flex-1 resize-none overflow-y-auto bg-transparent py-1.5 text-base leading-6 text-[#050505] outline-none placeholder:text-gray-500 disabled:cursor-not-allowed dark:text-white dark:placeholder:text-gray-400"
                 />
               </div>
 
