@@ -1,3 +1,4 @@
+
 import {
   Request,
   Response,
@@ -35,14 +36,12 @@ export const createFriendRequest =
       } = req.body;
 
       if (
-        typeof targetUserId !==
-          "string" ||
+        typeof targetUserId !== "string" ||
         !targetUserId.trim()
       ) {
         return res.status(400).json({
           success: false,
-          message:
-            "targetUserId is required",
+          message: "targetUserId is required",
         });
       }
 
@@ -124,16 +123,14 @@ export const acceptRequest =
         req as AuthenticatedRequest;
 
       const friendshipId =
-        typeof req.params.friendshipId ===
-        "string"
+        typeof req.params.friendshipId === "string"
           ? req.params.friendshipId.trim()
           : "";
 
       if (!friendshipId) {
         return res.status(400).json({
           success: false,
-          message:
-            "friendshipId is required",
+          message: "friendshipId is required",
         });
       }
 
@@ -177,16 +174,14 @@ export const rejectRequest =
         req as AuthenticatedRequest;
 
       const friendshipId =
-        typeof req.params.friendshipId ===
-        "string"
+        typeof req.params.friendshipId === "string"
           ? req.params.friendshipId.trim()
           : "";
 
       if (!friendshipId) {
         return res.status(400).json({
           success: false,
-          message:
-            "friendshipId is required",
+          message: "friendshipId is required",
         });
       }
 
@@ -230,16 +225,14 @@ export const cancelRequest =
         req as AuthenticatedRequest;
 
       const friendshipId =
-        typeof req.params.friendshipId ===
-        "string"
+        typeof req.params.friendshipId === "string"
           ? req.params.friendshipId.trim()
           : "";
 
       if (!friendshipId) {
         return res.status(400).json({
           success: false,
-          message:
-            "friendshipId is required",
+          message: "friendshipId is required",
         });
       }
 
@@ -332,11 +325,13 @@ export const searchUsersController =
         });
       }
 
+      // الترتيب الصحيح:
+      // accessToken, query, currentUserId
       const users =
         await searchUsers(
           authenticatedReq.accessToken,
-          authenticatedReq.user.id,
-          q
+          q,
+          authenticatedReq.user.id
         );
 
       return res.status(200).json({
