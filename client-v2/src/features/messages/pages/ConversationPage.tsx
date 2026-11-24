@@ -550,16 +550,13 @@ export default function ConversationPage() {
   return (
     <div
       dir="rtl"
-      className="h-[100dvh] min-h-[500px] w-full overflow-hidden bg-[#f0f2f5] dark:bg-[#111b21] sm:flex sm:items-center sm:justify-center sm:p-4"
+      className="h-full min-h-0 w-full overflow-hidden bg-[#f0f2f5] dark:bg-[#111b21] sm:flex sm:items-center sm:justify-center sm:p-4"
     >
       <div className="flex h-full w-full flex-col overflow-hidden bg-[#f0f2f5] dark:bg-[#111b21] sm:max-w-4xl sm:rounded-2xl sm:border sm:border-border/60 sm:bg-background sm:shadow-xl">
 
-        {/* =================================================
-            MESSENGER HEADER
-        ================================================= */}
+        {/* MESSENGER HEADER */}
 
         <header className="z-30 flex h-[62px] shrink-0 items-center gap-2 border-b border-gray-200 bg-white px-2 shadow-sm dark:border-gray-700 dark:bg-[#202c33] sm:h-[70px] sm:px-5">
-
           <button
             type="button"
             onClick={handleBack}
@@ -596,9 +593,7 @@ export default function ConversationPage() {
           </div>
         </header>
 
-        {/* =================================================
-            ERROR
-        ================================================= */}
+        {/* ERROR */}
 
         {error && (
           <div className="z-20 mx-3 mt-2 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
@@ -614,17 +609,13 @@ export default function ConversationPage() {
           </div>
         )}
 
-        {/* =================================================
-            CHAT AREA
-        ================================================= */}
+        {/* CHAT AREA */}
 
         <main
           ref={messagesContainerRef}
           className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f0f2f5] dark:bg-[#111b21]"
         >
           <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 py-5 sm:px-6 sm:py-7">
-
-            {/* LOADING */}
 
             {loading ? (
               <div className="flex flex-1 flex-col items-center justify-center">
@@ -638,8 +629,6 @@ export default function ConversationPage() {
                 </p>
               </div>
             ) : messages.length === 0 ? (
-              /* EMPTY STATE */
-
               <div className="flex flex-1 items-center justify-center px-4">
                 <div className="w-full max-w-xs text-center">
                   <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm dark:bg-[#202c33]">
@@ -673,23 +662,17 @@ export default function ConversationPage() {
                 </div>
               </div>
             ) : (
-              /* MESSAGES */
-
               <div className="flex flex-col gap-6">
                 {groupedMessages.map((group) => (
                   <section
                     key={group.date}
                     className="flex flex-col gap-3"
                   >
-                    {/* DATE */}
-
                     <div className="flex justify-center py-1">
                       <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] font-medium text-gray-500 shadow-sm dark:bg-[#202c33] dark:text-gray-300">
                         {group.date}
                       </span>
                     </div>
-
-                    {/* MESSAGE LIST */}
 
                     <div className="flex flex-col gap-1.5">
                       {group.messages.map((message) => {
@@ -763,17 +746,11 @@ export default function ConversationPage() {
           </div>
         </main>
 
-        {/* =================================================
-            MESSENGER COMPOSER
-        ================================================= */}
+        {/* MESSENGER COMPOSER */}
 
         <footer className="z-30 shrink-0 border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-[#202c33]">
           <div className="mx-auto w-full max-w-3xl px-2 pb-[calc(8px+env(safe-area-inset-bottom))] pt-2.5 sm:px-5 sm:pb-3">
-
             <div className="flex items-end gap-2">
-
-              {/* MESSAGE INPUT */}
-
               <div className="flex min-h-[44px] flex-1 items-end rounded-[22px] bg-[#f0f2f5] px-4 py-1.5 dark:bg-[#111b21]">
                 <textarea
                   ref={textareaRef}
@@ -787,8 +764,6 @@ export default function ConversationPage() {
                   className="max-h-32 min-h-[30px] flex-1 resize-none overflow-y-auto bg-transparent py-1.5 text-[15px] leading-6 text-[#050505] outline-none placeholder:text-gray-500 disabled:cursor-not-allowed dark:text-white dark:placeholder:text-gray-400"
                 />
               </div>
-
-              {/* SEND BUTTON */}
 
               <button
                 type="button"

@@ -9,13 +9,21 @@ export default function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // إغلاق القائمة عند الانتقال إلى صفحة أخرى
+  const isConversationPage =
+    location.pathname.startsWith("/messages/");
+
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div
+      className={`flex bg-gray-100 ${
+        isConversationPage
+          ? "h-dvh overflow-hidden"
+          : "min-h-screen"
+      }`}
+    >
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
@@ -58,12 +66,24 @@ export default function DashboardLayout() {
       </div>
 
       {/* Main */}
-      <div className="min-w-0 flex-1 flex flex-col">
+      <div
+        className={`min-w-0 flex flex-1 flex-col ${
+          isConversationPage
+            ? "h-full min-h-0 overflow-hidden"
+            : ""
+        }`}
+      >
         <Navbar
           onMenuClick={() => setIsSidebarOpen(true)}
         />
 
-        <main className="w-full p-3 sm:p-6">
+        <main
+          className={
+            isConversationPage
+              ? "min-h-0 w-full flex-1 overflow-hidden p-0"
+              : "w-full p-3 sm:p-6"
+          }
+        >
           <Outlet />
         </main>
       </div>
