@@ -14,6 +14,7 @@ import {
   MessageCircle,
   Users,
   UserPlus,
+  X,
   type LucideIcon,
 } from "lucide-react";
 
@@ -23,7 +24,13 @@ import {
 
 import UniShareLogo from "../brand/UniShareLogo";
 
-export default function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+const DEFAULT_AVATAR = "/avatars/default.png";
+
+export default function Sidebar({ onClose }: SidebarProps) {
   const navigate = useNavigate();
 
   const {
@@ -31,50 +38,36 @@ export default function Sidebar() {
     signOut,
   } = useAuth();
 
-  // =====================================================
-  // User
-  // =====================================================
-
+  // User information
   const displayName =
     profile?.full_name?.trim() ||
     profile?.username?.trim() ||
     "مستخدم";
 
   const avatar =
-    profile?.avatar_url?.trim() || null;
+    profile?.avatar_url?.trim() || DEFAULT_AVATAR;
 
-  // =====================================================
-  // Role Label
-  // =====================================================
-
+  // Role label
   const roleLabel =
     profile?.role === "elite_student"
       ? "طالب متميز"
       : "طالب";
 
-  // =====================================================
   // Logout
-  // =====================================================
-
   async function handleSignOut() {
     try {
       await signOut();
+      onClose?.();
 
       navigate("/login", {
         replace: true,
       });
     } catch (error) {
-      console.error(
-        "Sidebar logout error:",
-        error
-      );
+      console.error("Sidebar logout error:", error);
     }
   }
 
-  // =====================================================
-  // Navigation
-  // =====================================================
-
+  // Navigation links
   const links: {
     name: string;
     path: string;
@@ -112,10 +105,7 @@ export default function Sidebar() {
     },
   ];
 
-  // =====================================================
   // Shared navigation item
-  // =====================================================
-
   function renderNavItem(
     path: string,
     name: string,
@@ -125,6 +115,7 @@ export default function Sidebar() {
       <NavLink
         key={path}
         to={path}
+        onClick={onClose}
         className={({ isActive }) =>
           [
             "group",
@@ -213,10 +204,7 @@ export default function Sidebar() {
     );
   }
 
-  // =====================================================
   // Render
-  // =====================================================
-
   return (
     <aside
       dir="rtl"
@@ -263,8 +251,35 @@ export default function Sidebar() {
           "
         />
 
-        <div className="relative flex items-center">
+        <div className="relative flex items-center justify-between gap-3">
           <UniShareLogo />
+
+          {/* Mobile Close Button */}
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="إغلاق القائمة"
+            className="
+              flex
+              h-9
+              w-9
+              shrink-0
+              items-center
+              justify-center
+              rounded-xl
+              text-slate-500
+              transition-colors
+              hover:bg-slate-100
+              hover:text-slate-900
+              dark:text-slate-400
+              dark:hover:bg-slate-800
+              dark:hover:text-white
+              lg:hidden
+            "
+          >
+            <X size={21} />
+          </button>
         </div>
       </div>
 
@@ -311,6 +326,7 @@ export default function Sidebar() {
           {profile?.faculty_id ? (
             <NavLink
               to={`/faculties/${profile.faculty_id}/specialties`}
+              onClick={onClose}
               className={({ isActive }) =>
                 [
                   "group",
@@ -472,7 +488,10 @@ export default function Sidebar() {
         >
           <button
             type="button"
-            onClick={() => navigate("/profile")}
+            onClick={() => {
+              navigate("/profile");
+              onClose?.();
+            }}
             className="
               flex
               w-full
@@ -491,49 +510,29 @@ export default function Sidebar() {
               dark:hover:bg-slate-800
             "
           >
-            {/* Avatar */}
+            {/* Unified Avatar */}
 
             <div className="relative shrink-0">
-              {avatar ? (
-                <img
-                  src={avatar}
-                  alt={displayName}
-                  className="
-                    h-10
-                    w-10
-                    rounded-xl
-                    object-cover
-                    ring-2
-                    ring-white
-                    dark:ring-slate-800
-                  "
-                  onError={(event) => {
-                    event.currentTarget.style.display = "none";
-                  }}
-                />
-              ) : (
-                <div
-                  className="
-                    flex
-                    h-10
-                    w-10
-                    items-center
-                    justify-center
-                    rounded-xl
-                    bg-blue-600
-                    text-2xl
-                    font-bold
-                    leading-none
-                    text-white
-                    ring-2
-                    ring-white
-                    dark:ring-slate-800
-                  "
-                  aria-label="الصورة الشخصية الافتراضية"
-                >
-                  ?
-                </div>
-              )}
+              <img
+                src={avatar}
+                alt={displayName}
+                className="
+                  h-10
+                  w-10
+                  rounded-xl
+                  object-cover
+                  ring-2
+                  ring-white
+                  dark:ring-slate-800
+                "
+                onError={(event) => {
+                  const image = event.currentTarget;
+
+                  if (!image.src.endsWith(DEFAULT_AVATAR)) {
+                    image.src = DEFAULT_AVATAR;
+                  }
+                }}
+              />
 
               <span
                 className="
