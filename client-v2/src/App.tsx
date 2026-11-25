@@ -1,4 +1,3 @@
-
 import {
   BrowserRouter,
   Navigate,
@@ -68,7 +67,7 @@ import CountryDetailsPage from "./features/countries/pages/CountryDetailsPage";
 // =====================================================
 
 import UniversitiesPage from "./features/universities/pages/UniversitiesPage";
-import UniversityDetailsPage from "./features/universities/pages/UniversityDetailsPage";
+import UniversitySpacePage from "./features/universities/pages/UniversitySpacePage";
 
 // =====================================================
 // ACADEMIC
@@ -125,226 +124,95 @@ export default function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* =================================================
-            PUBLIC ROUTES
-        ================================================= */}
+        {/* PUBLIC ROUTES */}
 
-        <Route
-          path="/"
-          element={<HomePage />}
-        />
+        <Route path="/" element={<HomePage />} />
 
-        <Route
-          path="/login"
-          element={<LoginPage />}
-        />
+        <Route path="/login" element={<LoginPage />} />
 
-        {/* استرجاع كلمة المرور */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-        <Route
-          path="/forgot-password"
-          element={<ForgotPasswordPage />}
-        />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-        {/* إعادة تعيين كلمة المرور */}
+        <Route path="/register" element={<RegisterPage />} />
 
-        <Route
-          path="/reset-password"
-          element={<ResetPasswordPage />}
-        />
+        <Route path="/complete-profile" element={<CompleteProfilePage />} />
 
-        <Route
-          path="/register"
-          element={<RegisterPage />}
-        />
+        <Route path="/create-avatar" element={<CreateAvatar />} />
 
-        <Route
-          path="/complete-profile"
-          element={<CompleteProfilePage />}
-        />
+        {/* PUBLIC ACADEMIC AREA */}
 
-        <Route
-          path="/create-avatar"
-          element={<CreateAvatar />}
-        />
+        <Route path="/countries" element={<CountriesPage />} />
 
-        {/* =================================================
-            PUBLIC ACADEMIC AREA
-            متاح للزائر بدون تسجيل
-        ================================================= */}
+        <Route path="/countries/:countryId" element={<CountryDetailsPage />} />
 
-        {/* البلدان */}
+        {/* UNIVERSITIES */}
 
-        <Route
-          path="/countries"
-          element={<CountriesPage />}
-        />
+        <Route path="/universities" element={<UniversitiesPage />} />
 
-        <Route
-          path="/countries/:countryId"
-          element={<CountryDetailsPage />}
-        />
+        <Route path="/universities/:slug" element={<UniversitySpacePage />} />
 
-        {/* الجامعات */}
+        {/* FACULTIES */}
 
-        <Route
-          path="/universities"
-          element={<UniversitiesPage />}
-        />
-
-        <Route
-          path="/universities/:slug"
-          element={<UniversityDetailsPage />}
-        />
-
-        {/* الكليات */}
-
-        <Route
-          path="/faculties"
-          element={<Faculties />}
-        />
-
-        {/* المسار القديم يبقى موجودًا حاليًا
-            حتى لا نكسر أي جزء آخر من التطبيق */}
+        <Route path="/faculties" element={<Faculties />} />
 
         <Route
           path="/faculties/:id/specialties"
           element={<FacultySpacePage />}
         />
 
-        {/* الأقسام */}
+        {/* DEPARTMENTS */}
 
-        <Route
-          path="/departments"
-          element={<DepartmentsPage />}
-        />
+        <Route path="/departments" element={<DepartmentsPage />} />
 
-        <Route
-          path="/departments/:id"
-          element={<DepartmentDetailsPage />}
-        />
+        <Route path="/departments/:id" element={<DepartmentDetailsPage />} />
 
-        {/* السداسيات */}
+        {/* SEMESTERS */}
 
-        <Route
-          path="/levels/:levelId/semesters"
-          element={<Semesters />}
-        />
+        <Route path="/levels/:levelId/semesters" element={<Semesters />} />
 
-        <Route
-          path="/semesters/:semesterId"
-          element={<SemesterSpacePage />}
-        />
+        <Route path="/semesters/:semesterId" element={<SemesterSpacePage />} />
 
-        {/* الدروس */}
+        {/* LESSONS */}
 
-        <Route
-          path="/subjects/:subjectId/lessons"
-          element={<LessonsPage />}
-        />
+        <Route path="/subjects/:subjectId/lessons" element={<LessonsPage />} />
 
-        <Route
-          path="/lessons/:id"
-          element={<LessonDetailsPage />}
-        />
+        <Route path="/lessons/:id" element={<LessonDetailsPage />} />
 
-        {/* =================================================
-            ADMIN ROUTES
-        ================================================= */}
+        {/* ADMIN */}
 
-        <Route
-          path="/admin/*"
-          element={<AdminRoutes />}
-        />
+        <Route path="/admin/*" element={<AdminRoutes />} />
 
-        {/* =================================================
-            PROTECTED AREA
-            الصفحات التي تحتاج حسابًا
-        ================================================= */}
+        {/* PROTECTED AREA */}
 
         <Route element={<ProtectedRoute />}>
-
           <Route element={<DashboardLayout />}>
 
-            {/* =============================================
-                DASHBOARD
-            ============================================= */}
+            <Route path="/dashboard" element={<Dashboard />} />
 
-            <Route
-              path="/dashboard"
-              element={<Dashboard />}
-            />
+            <Route path="/profile" element={<Profile />} />
 
-            {/* =============================================
-                PROFILE
-            ============================================= */}
+            <Route path="/profile/:userId" element={<Profile />} />
 
-            <Route
-              path="/profile"
-              element={<Profile />}
-            />
+            <Route path="/profile/edit" element={<EditProfile />} />
 
-            {/* بروفايل مستخدم آخر */}
-
-            <Route
-              path="/profile/:userId"
-              element={<Profile />}
-            />
-
-            <Route
-              path="/profile/edit"
-              element={<EditProfile />}
-            />
-
-            {/* =============================================
-                MESSAGES
-            ============================================= */}
-
-            <Route
-              path="/messages"
-              element={<MessagesPage />}
-            />
+            <Route path="/messages" element={<MessagesPage />} />
 
             <Route
               path="/messages/:conversationId"
               element={<ConversationPage />}
             />
 
-            {/* =============================================
-                GROUP CHATS
-            ============================================= */}
-
             <Route
               path="/group-chats/:groupId"
               element={<GroupChatPage />}
             />
 
-            {/* =============================================
-                FRIENDS
-            ============================================= */}
+            <Route path="/friends" element={<FriendsPage />} />
 
-            <Route
-              path="/friends"
-              element={<FriendsPage />}
-            />
+            <Route path="/people" element={<PeoplePage />} />
 
-            <Route
-              path="/people"
-              element={<PeoplePage />}
-            />
-
-            {/* =============================================
-                GAMIFICATION
-            ============================================= */}
-
-            <Route
-              path="/gems"
-              element={<GamificationPage />}
-            />
-
-            {/* =============================================
-                POSTS / FEED
-            ============================================= */}
+            <Route path="/gems" element={<GamificationPage />} />
 
             <Route
               path="/posts"
@@ -356,21 +224,13 @@ export default function App() {
             />
 
           </Route>
-
         </Route>
 
-        {/* =================================================
-            FALLBACK
-        ================================================= */}
+        {/* FALLBACK */}
 
         <Route
           path="*"
-          element={
-            <Navigate
-              to="/"
-              replace
-            />
-          }
+          element={<Navigate to="/" replace />}
         />
 
       </Routes>
