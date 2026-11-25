@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -21,6 +20,13 @@ import {
   Users,
   Lock,
   Globe,
+  Orbit,
+  Zap,
+  Atom,
+  X,
+  Radio,
+  Megaphone,
+  BadgePercent,
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabaseClient";
@@ -100,75 +106,33 @@ type ModuleWithSubjects = AcademicModule & {
 // ======================================================
 
 function SemesterSpacePageContent() {
-  const { semesterId } = useParams<{
-    semesterId: string;
-  }>();
-
+  const { semesterId } = useParams<{ semesterId: string }>();
   const navigate = useNavigate();
 
-  // ====================================================
-  // State
-  // ====================================================
+  const [semester, setSemester] = useState<SemesterInfo | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [modules, setModules] = useState<ModuleWithSubjects[]>([]);
+  const [groupChats, setGroupChats] = useState<SemesterGroupChat[]>([]);
 
-  const [semester, setSemester] =
-    useState<SemesterInfo | null>(null);
+  const [groupDialog, setGroupDialog] = useState<"create" | "join" | null>(null);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDescription, setNewGroupDescription] = useState("");
+  const [invitationToken, setInvitationToken] = useState("");
+  const [groupActionLoading, setGroupActionLoading] = useState(false);
+  const [groupActionError, setGroupActionError] = useState<string | null>(null);
 
-  const [posts, setPosts] =
-    useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [modulesLoading, setModulesLoading] = useState(false);
+  const [groupChatsLoading, setGroupChatsLoading] = useState(false);
 
-  const [modules, setModules] =
-    useState<ModuleWithSubjects[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [modulesError, setModulesError] = useState<string | null>(null);
+  const [groupChatsError, setGroupChatsError] = useState<string | null>(null);
 
-  const [groupChats, setGroupChats] =
-    useState<SemesterGroupChat[]>([]);
-
-  const [groupDialog, setGroupDialog] =
-    useState<"create" | "join" | null>(null);
-
-  const [newGroupName, setNewGroupName] =
-    useState("");
-
-  const [newGroupDescription, setNewGroupDescription] =
-    useState("");
-
-  const [invitationToken, setInvitationToken] =
-    useState("");
-
-  const [groupActionLoading, setGroupActionLoading] =
-    useState(false);
-
-  const [groupActionError, setGroupActionError] =
-    useState<string | null>(null);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [postsLoading, setPostsLoading] =
-    useState(false);
-
-  const [modulesLoading, setModulesLoading] =
-    useState(false);
-
-  const [groupChatsLoading, setGroupChatsLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState<string | null>(null);
-
-  const [modulesError, setModulesError] =
-    useState<string | null>(null);
-
-  const [groupChatsError, setGroupChatsError] =
-    useState<string | null>(null);
-
-  const [activeFilter, setActiveFilter] =
-    useState<ContentFilter>("all");
-
-  const [showComposer, setShowComposer] =
-    useState(false);
-
-  const [expandedModules, setExpandedModules] =
-    useState<Record<string, boolean>>({});
+  const [activeFilter, setActiveFilter] = useState<ContentFilter>("all");
+  const [showComposer, setShowComposer] = useState(false);
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
 
   // ====================================================
   // Load Semester
@@ -186,10 +150,7 @@ function SemesterSpacePageContent() {
         setLoading(true);
         setError(null);
 
-        const {
-          data,
-          error: semesterError,
-        } = await supabase
+        const { data, error: semesterError } = await supabase
           .from("semesters")
           .select(`
             id,
@@ -204,45 +165,29 @@ function SemesterSpacePageContent() {
           .maybeSingle();
 
         if (semesterError) {
-          console.error(
-            "LOAD SEMESTER ERROR:",
-            semesterError
-          );
-
+          console.error("LOAD SEMESTER ERROR:", semesterError);
           throw semesterError;
         }
 
         if (!data) {
-          throw new Error(
-            "لم يتم العثور على هذا السداسي."
-          );
+          throw new Error("لم يتم العثور على هذا السداسي.");
         }
 
-        const levelData =
-          Array.isArray(data.levels)
-            ? data.levels[0]
-            : data.levels;
-
-        const specialtyId =
-          levelData?.specialty_id ?? null;
+        const levelData = Array.isArray(data.levels)
+          ? data.levels[0]
+          : data.levels;
 
         setSemester({
           id: data.id,
           name: data.name,
           semester_number: data.semester_number,
           level_id: data.level_id,
-          specialty_id: specialtyId,
+          specialty_id: levelData?.specialty_id ?? null,
         });
       } catch (err) {
-        console.error(
-          "LOAD SEMESTER ERROR:",
-          err
-        );
-
+        console.error("LOAD SEMESTER ERROR:", err);
         setError(
-          err instanceof Error
-            ? err.message
-            : "تعذر تحميل السداسي."
+          err instanceof Error ? err.message : "تعذر تحميل السداسي."
         );
       } finally {
         setLoading(false);
@@ -257,67 +202,52 @@ function SemesterSpacePageContent() {
   // ====================================================
 
   useEffect(() => {
-    if (!semesterId) {
-      return;
-    }
+    if (!semesterId) return;
 
     async function loadAcademicStructure() {
-      if (!semesterId) {
-        return;
-      }
+      if (!semesterId) return;
 
       try {
         setModulesLoading(true);
         setModulesError(null);
 
-        const moduleData =
-          await getModulesBySemester(semesterId);
+        const moduleData = await getModulesBySemester(semesterId);
 
-        const modulesWithSubjects =
-          await Promise.all(
-            moduleData.map(async (module) => {
-              try {
-                const subjects =
-                  await getSubjectsByModule(module.id);
+        const modulesWithSubjects = await Promise.all(
+          moduleData.map(async (module) => {
+            try {
+              const subjects = await getSubjectsByModule(module.id);
 
-                return {
-                  id: module.id,
-                  name: module.name,
-                  subjects:
-                    (subjects ?? []) as AcademicSubject[],
-                };
-              } catch (subjectError) {
-                console.error(
-                  `LOAD SUBJECTS ERROR FOR MODULE ${module.id}:`,
-                  subjectError
-                );
+              return {
+                id: module.id,
+                name: module.name,
+                subjects: (subjects ?? []) as AcademicSubject[],
+              };
+            } catch (subjectError) {
+              console.error(
+                `LOAD SUBJECTS ERROR FOR MODULE ${module.id}:`,
+                subjectError
+              );
 
-                return {
-                  id: module.id,
-                  name: module.name,
-                  subjects: [],
-                };
-              }
-            })
-          );
+              return {
+                id: module.id,
+                name: module.name,
+                subjects: [],
+              };
+            }
+          })
+        );
 
         setModules(modulesWithSubjects);
 
-        const initialExpandedState =
-          modulesWithSubjects.reduce<
-            Record<string, boolean>
-          >((result, module) => {
+        setExpandedModules(
+          modulesWithSubjects.reduce<Record<string, boolean>>((result, module) => {
             result[module.id] = true;
             return result;
-          }, {});
-
-        setExpandedModules(initialExpandedState);
-      } catch (err) {
-        console.error(
-          "LOAD ACADEMIC STRUCTURE ERROR:",
-          err
+          }, {})
         );
-
+      } catch (err) {
+        console.error("LOAD ACADEMIC STRUCTURE ERROR:", err);
         setModulesError(
           err instanceof Error
             ? err.message
@@ -336,29 +266,18 @@ function SemesterSpacePageContent() {
   // ====================================================
 
   useEffect(() => {
-    if (!semesterId) {
-      return;
-    }
+    if (!semesterId) return;
 
     async function loadPosts() {
       try {
         setPostsLoading(true);
 
-        const data = await getPosts("all", {
-          semesterId,
-        });
-
+        const data = await getPosts("all", { semesterId });
         setPosts(data);
       } catch (err) {
-        console.error(
-          "LOAD SEMESTER POSTS ERROR:",
-          err
-        );
-
+        console.error("LOAD SEMESTER POSTS ERROR:", err);
         setError(
-          err instanceof Error
-            ? err.message
-            : "تعذر تحميل المنشورات."
+          err instanceof Error ? err.message : "تعذر تحميل المنشورات."
         );
       } finally {
         setPostsLoading(false);
@@ -385,17 +304,11 @@ function SemesterSpacePageContent() {
         setGroupChatsLoading(true);
         setGroupChatsError(null);
 
-        const data =
-          await getSemesterGroupChats(semesterId!);
+        const data = await getSemesterGroupChats(semesterId!);
 
-        if (!cancelled) {
-          setGroupChats(data);
-        }
+        if (!cancelled) setGroupChats(data);
       } catch (err) {
-        console.error(
-          "LOAD SEMESTER GROUP CHATS ERROR:",
-          err
-        );
+        console.error("LOAD SEMESTER GROUP CHATS ERROR:", err);
 
         if (!cancelled) {
           setGroupChatsError(
@@ -405,9 +318,7 @@ function SemesterSpacePageContent() {
           );
         }
       } finally {
-        if (!cancelled) {
-          setGroupChatsLoading(false);
-        }
+        if (!cancelled) setGroupChatsLoading(false);
       }
     }
 
@@ -419,30 +330,20 @@ function SemesterSpacePageContent() {
   }, [semesterId]);
 
   // ====================================================
-  // Open Group Chat
+  // Group Actions
   // ====================================================
 
   function openGroupChat(groupId: string) {
-    navigate(
-      `/group-chats/${encodeURIComponent(groupId)}`
-    );
+    navigate(`/group-chats/${encodeURIComponent(groupId)}`);
   }
 
-  // ====================================================
-  // Create / Join Semester Group Chat
-  // ====================================================
-
   async function handleCreateSemesterGroup() {
-    if (!semester || groupActionLoading) {
-      return;
-    }
+    if (!semester || groupActionLoading) return;
 
     const name = newGroupName.trim();
 
     if (name.length < 2 || name.length > 100) {
-      setGroupActionError(
-        "اسم المجموعة يجب أن يكون بين حرفين و100 حرف."
-      );
+      setGroupActionError("اسم المجموعة يجب أن يكون بين حرفين و100 حرف.");
       return;
     }
 
@@ -457,29 +358,18 @@ function SemesterSpacePageContent() {
       });
 
       try {
-        const updatedGroups =
-          await getSemesterGroupChats(semester.id);
-
+        const updatedGroups = await getSemesterGroupChats(semester.id);
         setGroupChats(updatedGroups);
       } catch (refreshError) {
-        console.error(
-          "REFRESH SEMESTER GROUP CHATS ERROR:",
-          refreshError
-        );
+        console.error("REFRESH SEMESTER GROUP CHATS ERROR:", refreshError);
       }
 
       setGroupDialog(null);
       openGroupChat(groupId);
     } catch (err) {
-      console.error(
-        "CREATE SEMESTER GROUP ERROR:",
-        err
-      );
-
+      console.error("CREATE SEMESTER GROUP ERROR:", err);
       setGroupActionError(
-        err instanceof Error
-          ? err.message
-          : "تعذر إنشاء المجموعة الدراسية."
+        err instanceof Error ? err.message : "تعذر إنشاء المجموعة الدراسية."
       );
     } finally {
       setGroupActionLoading(false);
@@ -487,9 +377,7 @@ function SemesterSpacePageContent() {
   }
 
   async function handleJoinSemesterGroup() {
-    if (groupActionLoading) {
-      return;
-    }
+    if (groupActionLoading) return;
 
     const token = invitationToken.trim();
 
@@ -504,35 +392,23 @@ function SemesterSpacePageContent() {
       setGroupActionLoading(true);
       setGroupActionError(null);
 
-      const groupId =
-        await joinGroupChatByToken(token);
+      const groupId = await joinGroupChatByToken(token);
 
       if (semester) {
         try {
-          const updatedGroups =
-            await getSemesterGroupChats(semester.id);
-
+          const updatedGroups = await getSemesterGroupChats(semester.id);
           setGroupChats(updatedGroups);
         } catch (refreshError) {
-          console.error(
-            "REFRESH SEMESTER GROUP CHATS ERROR:",
-            refreshError
-          );
+          console.error("REFRESH SEMESTER GROUP CHATS ERROR:", refreshError);
         }
       }
 
       setGroupDialog(null);
       openGroupChat(groupId);
     } catch (err) {
-      console.error(
-        "JOIN SEMESTER GROUP ERROR:",
-        err
-      );
-
+      console.error("JOIN SEMESTER GROUP ERROR:", err);
       setGroupActionError(
-        err instanceof Error
-          ? err.message
-          : "تعذر الانضمام إلى المجموعة."
+        err instanceof Error ? err.message : "تعذر الانضمام إلى المجموعة."
       );
     } finally {
       setGroupActionLoading(false);
@@ -540,16 +416,14 @@ function SemesterSpacePageContent() {
   }
 
   function closeGroupDialog() {
-    if (groupActionLoading) {
-      return;
-    }
+    if (groupActionLoading) return;
 
     setGroupDialog(null);
     setGroupActionError(null);
   }
 
   // ====================================================
-  // Toggle Module
+  // Academic Navigation
   // ====================================================
 
   function toggleModule(moduleId: string) {
@@ -559,10 +433,6 @@ function SemesterSpacePageContent() {
     }));
   }
 
-  // ====================================================
-  // Open Subject Lessons
-  // ====================================================
-
   function openSubjectLessons(subjectId: string) {
     navigate(`/subjects/${subjectId}/lessons`);
   }
@@ -571,10 +441,7 @@ function SemesterSpacePageContent() {
   // Like
   // ====================================================
 
-  async function handleSemesterLike(
-    postId: string,
-    likedByMe: boolean
-  ) {
+  async function handleSemesterLike(postId: string, likedByMe: boolean) {
     setPosts((current) =>
       current.map((post) =>
         post.id === postId
@@ -592,10 +459,7 @@ function SemesterSpacePageContent() {
     try {
       await toggleLike(postId, likedByMe);
     } catch (error) {
-      console.error(
-        "SEMESTER LIKE ERROR:",
-        error
-      );
+      console.error("SEMESTER LIKE ERROR:", error);
 
       setPosts((current) =>
         current.map((post) =>
@@ -621,72 +485,79 @@ function SemesterSpacePageContent() {
 
   async function handleSemesterDelete(postId: string) {
     await deletePost(postId);
-
-    setPosts((current) =>
-      current.filter((post) => post.id !== postId)
-    );
+    setPosts((current) => current.filter((post) => post.id !== postId));
   }
 
   // ====================================================
-  // Filter Posts
+  // Filters
   // ====================================================
 
   const filteredPosts = useMemo(() => {
-    if (activeFilter === "all") {
-      return posts;
-    }
+    if (activeFilter === "all") return posts;
 
-    return posts.filter(
-      (post) => post.academicType === activeFilter
-    );
+    return posts.filter((post) => post.academicType === activeFilter);
   }, [posts, activeFilter]);
-
-  // ====================================================
-  // Categories
-  // ====================================================
 
   const categories = [
     {
       id: "all" as ContentFilter,
       label: "الكل",
-      icon: GraduationCap,
       description: "كل محتوى السداسي",
-      activeClass: "border-indigo-200 bg-indigo-50/80",
-      iconClass: "bg-indigo-100 text-indigo-600",
+      icon: GraduationCap,
+      color: "cyan",
     },
     {
       id: "lesson" as ContentFilter,
       label: "الدروس",
-      icon: BookOpen,
       description: "الدروس والمحاضرات",
-      activeClass: "border-blue-200 bg-blue-50/80",
-      iconClass: "bg-blue-100 text-blue-600",
+      icon: BookOpen,
+      color: "blue",
     },
     {
       id: "summary" as ContentFilter,
       label: "الملخصات",
-      icon: FileText,
       description: "ملخصات مفيدة للمراجعة",
-      activeClass: "border-violet-200 bg-violet-50/80",
-      iconClass: "bg-violet-100 text-violet-600",
+      icon: FileText,
+      color: "violet",
     },
     {
       id: "exam" as ContentFilter,
       label: "الامتحانات",
-      icon: ClipboardCheck,
       description: "اختبارات وامتحانات سابقة",
-      activeClass: "border-cyan-200 bg-cyan-50/80",
-      iconClass: "bg-cyan-100 text-cyan-600",
+      icon: ClipboardCheck,
+      color: "emerald",
     },
     {
       id: "research_discussion" as ContentFilter,
       label: "البحوث والمناقشات",
-      icon: MessageSquareText,
       description: "بحوث ومواضيع للنقاش الأكاديمي",
-      activeClass: "border-purple-200 bg-purple-50/80",
-      iconClass: "bg-purple-100 text-purple-600",
+      icon: MessageSquareText,
+      color: "fuchsia",
     },
   ];
+
+  const colorStyles: Record<string, { icon: string; active: string }> = {
+    cyan: {
+      icon: "bg-cyan-400/10 text-cyan-300 border-cyan-400/20",
+      active: "border-cyan-400/50 bg-cyan-400/10 shadow-[0_0_30px_-10px_rgba(34,211,238,0.35)]",
+    },
+    blue: {
+      icon: "bg-blue-400/10 text-blue-300 border-blue-400/20",
+      active: "border-blue-400/50 bg-blue-400/10 shadow-[0_0_30px_-10px_rgba(59,130,246,0.35)]",
+    },
+    violet: {
+      icon: "bg-violet-400/10 text-violet-300 border-violet-400/20",
+      active: "border-violet-400/50 bg-violet-400/10 shadow-[0_0_30px_-10px_rgba(139,92,246,0.35)]",
+    },
+    emerald: {
+      icon: "bg-emerald-400/10 text-emerald-300 border-emerald-400/20",
+      active: "border-emerald-400/50 bg-emerald-400/10 shadow-[0_0_30px_-10px_rgba(52,211,153,0.35)]",
+    },
+    fuchsia: {
+      icon: "bg-fuchsia-400/10 text-fuchsia-300 border-fuchsia-400/20",
+      active: "border-fuchsia-400/50 bg-fuchsia-400/10 shadow-[0_0_30px_-10px_rgba(217,70,239,0.35)]",
+    },
+  };
 
   // ====================================================
   // Loading
@@ -694,27 +565,16 @@ function SemesterSpacePageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8fafc]">
-        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 w-20 rounded-xl bg-slate-200" />
-
-            <div className="h-56 rounded-[2rem] bg-slate-200" />
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <div className="h-28 rounded-2xl bg-slate-200" />
-              <div className="h-28 rounded-2xl bg-slate-200" />
-              <div className="h-28 rounded-2xl bg-slate-200" />
-              <div className="h-28 rounded-2xl bg-slate-200" />
-              <div className="h-28 rounded-2xl bg-slate-200" />
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="h-80 rounded-[1.75rem] bg-slate-200" />
-              <div className="h-80 rounded-[1.75rem] bg-slate-200" />
-            </div>
+      <div dir="rtl" className="future-space min-h-screen bg-[#050816] px-4 py-8">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <div className="h-8 w-28 animate-pulse rounded-xl bg-white/10" />
+          <div className="h-64 animate-pulse rounded-[2rem] border border-white/10 bg-white/[0.04]" />
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="h-72 animate-pulse rounded-[2rem] bg-white/[0.04]" />
+            <div className="h-72 animate-pulse rounded-[2rem] bg-white/[0.04]" />
           </div>
         </div>
+        <style>{futureStyles}</style>
       </div>
     );
   }
@@ -725,31 +585,29 @@ function SemesterSpacePageContent() {
 
   if (error || !semester) {
     return (
-      <div
-        dir="rtl"
-        className="min-h-screen bg-[#f8fafc] px-4 py-10"
-      >
-        <div className="mx-auto max-w-2xl rounded-[2rem] border border-red-100 bg-gradient-to-br from-red-50 via-white to-orange-50 p-8 text-center shadow-sm">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-100 text-2xl">
-            ⚠️
+      <div dir="rtl" className="future-space flex min-h-screen items-center justify-center bg-[#050816] px-4 py-10">
+        <div className="glass-panel w-full max-w-xl rounded-[2rem] p-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-400/10 text-rose-300">
+            <Zap size={28} />
           </div>
 
-          <h1 className="text-xl font-black text-slate-900">
+          <h1 className="mt-5 text-xl font-black text-white">
             تعذر تحميل السداسي
           </h1>
 
-          <p className="mt-2 text-sm leading-6 text-slate-500">
+          <p className="mt-3 text-sm leading-7 text-slate-400">
             {error ?? "تعذر العثور على السداسي."}
           </p>
 
           <button
             onClick={() => navigate(-1)}
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition-all duration-200 hover:bg-slate-800 active:scale-[0.98]"
+            className="neon-button mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white"
           >
             <ArrowLeft size={18} />
             العودة
           </button>
         </div>
+        <style>{futureStyles}</style>
       </div>
     );
   }
@@ -759,422 +617,324 @@ function SemesterSpacePageContent() {
   // ====================================================
 
   return (
-    <div
-      dir="rtl"
-      className="min-h-screen bg-[#f8fafc]"
-    >
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <div dir="rtl" className="future-space min-h-screen overflow-hidden bg-[#050816] text-slate-100">
+      <style>{futureStyles}</style>
+
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="space-orb orb-one" />
+        <div className="space-orb orb-two" />
+        <div className="space-orb orb-three" />
+        <div className="space-grid" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-[1500px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 
         {/* Back */}
 
         <button
           onClick={() => navigate(-1)}
-          className="mb-5 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-slate-500 transition-all duration-200 hover:bg-white hover:text-indigo-600 hover:shadow-sm active:scale-[0.97]"
+          className="mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-bold text-slate-400 transition-all hover:border-cyan-400/30 hover:bg-cyan-400/5 hover:text-cyan-200"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={17} />
           العودة
         </button>
 
         {/* Hero */}
 
-        <section className="relative overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-gradient-to-br from-indigo-50/90 via-white to-cyan-50/90 p-6 shadow-[0_18px_50px_-35px_rgba(79,70,229,0.45)] sm:p-8 lg:p-10">
-          <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-indigo-400/10 blur-3xl" />
-          <div className="absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
-          <div className="absolute right-1/3 top-1/2 h-32 w-32 rounded-full bg-purple-400/5 blur-3xl" />
+        <section className="hero-panel relative overflow-hidden rounded-[2rem] border border-cyan-300/15 p-6 shadow-[0_25px_100px_-45px_rgba(34,211,238,0.25)] sm:p-9 lg:p-11">
+          <div className="hero-grid absolute inset-0 opacity-40" />
+          <div className="hero-glow absolute -right-24 -top-32 h-80 w-80 rounded-full bg-cyan-400/15 blur-[90px]" />
+          <div className="hero-glow absolute -bottom-40 -left-20 h-96 w-96 rounded-full bg-violet-500/20 blur-[100px]" />
 
-          <div className="relative">
-            <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
-              <div className="min-w-0">
-                <div className="mb-5 flex items-center gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/20">
-                    <GraduationCap size={27} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-xs font-bold text-indigo-600">
-                      <Sparkles size={14} />
-                      المساحة الأكاديمية
-                    </div>
-
-                    <h1 className="mt-1 truncate text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                      {semester.name}
-                    </h1>
-                  </div>
+          <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="min-w-0">
+              <div className="mb-6 flex flex-wrap items-center gap-3">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-200 shadow-[0_0_35px_-10px_rgba(34,211,238,0.5)]">
+                  <GraduationCap size={29} />
                 </div>
 
-                <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
-                  مساحة مخصصة لمحتوى هذا السداسي.
-                  شارك الدروس والملخصات والامتحانات
-                  والبحوث والمناقشات مع زملائك
-                  في بيئة أكاديمية منظمة.
-                </p>
-
-                <div className="mt-6 flex flex-wrap gap-2.5">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/70 px-4 py-2 text-xs font-bold text-indigo-700 shadow-sm backdrop-blur">
-                    <CalendarDays size={14} />
-                    الفصل الدراسي {semester.semester_number}
+                <div>
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-cyan-300">
+                    <Orbit size={14} className="animate-spin-slow" />
+                    UNISHARE · ACADEMIC CORE
                   </div>
+                  <p className="mt-1 text-xs font-bold text-slate-400">
+                    الجيل القادم من التعلم الجامعي
+                  </p>
+                </div>
 
-                  <div className="rounded-full border border-cyan-100 bg-white/70 px-4 py-2 text-xs font-bold text-cyan-700 shadow-sm backdrop-blur">
-                    {posts.length} منشور
-                  </div>
-
-                  <div className="rounded-full border border-purple-100 bg-white/70 px-4 py-2 text-xs font-bold text-purple-700 shadow-sm backdrop-blur">
-                    {modules.length} وحدة
-                  </div>
+                <div className="mr-auto inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-[10px] font-bold text-emerald-300">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                  النظام الأكاديمي نشط
                 </div>
               </div>
 
+              <p className="mb-2 text-xs font-bold tracking-wide text-cyan-200/90">
+                المساحة الأكاديمية
+              </p>
+
+              <h1 className="semester-title max-w-3xl text-3xl font-black leading-tight tracking-tight sm:text-4xl lg:text-5xl">
+                {semester.name}
+              </h1>
+
+              <p className="mt-5 max-w-2xl text-sm leading-8 text-slate-300 sm:text-base">
+                مركزك الأكاديمي المتكامل. اكتشف الوحدات والمقاييس،
+                وتبادل المعرفة، وتواصل مع زملائك في فضاء رقمي
+                مصمم لمستقبل التعليم.
+              </p>
+
+              <div className="mt-7 flex flex-wrap gap-2.5">
+                <div className="hero-chip">
+                  <CalendarDays size={14} />
+                  السداسي {semester.semester_number}
+                </div>
+                <div className="hero-chip">
+                  <FileText size={14} />
+                  {posts.length} منشور
+                </div>
+                <div className="hero-chip">
+                  <Layers3 size={14} />
+                  {modules.length} وحدة أكاديمية
+                </div>
+              </div>
+            </div>
+
+            <div className="relative mx-auto flex h-44 w-44 items-center justify-center sm:h-52 sm:w-52 lg:mx-0">
+              <div className="absolute inset-0 rounded-full border border-cyan-300/15" />
+              <div className="absolute inset-4 rounded-full border border-dashed border-violet-300/25 animate-spin-slow" />
+              <div className="absolute inset-8 rounded-full border border-cyan-300/20" />
+              <div className="absolute h-32 w-32 rounded-full bg-cyan-400/10 blur-2xl" />
+              <div className="relative flex h-24 w-24 items-center justify-center rounded-[2rem] border border-cyan-300/30 bg-gradient-to-br from-cyan-400/15 to-violet-500/20 text-cyan-200 shadow-[0_0_55px_-15px_rgba(34,211,238,0.5)]">
+                <Atom size={48} strokeWidth={1.2} />
+              </div>
+              <span className="absolute right-5 top-7 h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_#67e8f9]" />
+              <span className="absolute bottom-8 left-5 h-1.5 w-1.5 rounded-full bg-violet-300 shadow-[0_0_12px_#c4b5fd]" />
+              <span className="absolute left-7 top-12 h-1 w-1 rounded-full bg-blue-300" />
+            </div>
+          </div>
+
+          <div className="relative mt-8 grid grid-cols-3 gap-3 border-t border-white/10 pt-6">
+            {[
+              { label: "المحتوى الأكاديمي", value: posts.length, icon: FileText },
+              { label: "الوحدات التعليمية", value: modules.length, icon: Layers3 },
+              { label: "المجموعات الدراسية", value: groupChats.length, icon: Users },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.label} className="hero-stat">
+                  <div className="mb-2 flex items-center gap-2 text-cyan-200">
+                    <Icon size={15} />
+                    <span className="text-[10px] font-bold sm:text-xs">{item.label}</span>
+                  </div>
+                  <p className="text-2xl font-black tabular-nums text-white sm:text-3xl">
+                    {item.value}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Advertisement Space */}
+
+        <section className="advertisement-section mt-8" aria-label="المساحة الإعلانية">
+          <div className="advertisement-card">
+            <div className="advertisement-orbit advertisement-orbit-one" />
+            <div className="advertisement-orbit advertisement-orbit-two" />
+            <div className="advertisement-glow" />
+
+            <div className="relative z-10 flex flex-col items-center justify-between gap-6 p-6 text-center sm:flex-row sm:p-8 sm:text-right">
+              <div className="flex flex-col items-center gap-4 sm:flex-row">
+                <div className="advertisement-icon">
+                  <Megaphone size={27} />
+                </div>
+
+                <div>
+                  <div className="mb-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                    <span className="advertisement-label">
+                      <Radio size={11} />
+                      ADVERTISEMENT SPACE
+                    </span>
+                    <span className="advertisement-status">
+                      <span className="h-1.5 w-1.5 rounded-full bg-cyan-300" />
+                      مساحة إعلانية
+                    </span>
+                  </div>
+
+                  <h2 className="text-xl font-black text-white sm:text-2xl">
+                    مساحة مخصصة للإعلانات
+                  </h2>
+
+                  <p className="mt-2 max-w-xl text-xs leading-7 text-slate-300 sm:text-sm">
+                    هنا ستظهر الإعلانات والعروض التي تهم طلبة هذا السداسي،
+                    في مساحة مستقلة لا تؤثر على تجربتك الأكاديمية.
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative flex shrink-0 flex-col items-center gap-2">
+                <div className="advertisement-badge">
+                  <BadgePercent size={24} />
+                </div>
+                <span className="text-[10px] font-bold tracking-wider text-cyan-200/80">
+                  UNISHARE ADS
+                </span>
+              </div>
+            </div>
+
+            <div className="advertisement-footer">
+              <span className="flex items-center gap-2">
+                <Sparkles size={13} />
+                مساحة إعلانية مستقلة
+              </span>
+              <span className="hidden sm:inline">ACADEMIC NETWORK · 2050</span>
             </div>
           </div>
         </section>
 
-        {/* Academic Content + Group Chats */}
+        {/* Academic Structure + Groups */}
 
-        <div className="mt-8 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(300px,1fr)_minmax(0,2fr)]">
+        <div className="mt-9 grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)]">
 
-          {/* Semester Group Chats */}
-
-          <section className="min-w-0">
-            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-sm">
-                    <Users size={19} />
-                  </div>
-
-                  <div>
-                    <h2 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
-                      المجموعات الدراسية
-                    </h2>
-
-                    <p className="mt-1 text-xs text-slate-400">
-                      تواصل مع زملائك في مجموعات هذا السداسي
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {!groupChatsLoading &&
-                  !groupChatsError &&
-                  groupChats.length > 0 && (
-                    <div className="self-start rounded-full border border-violet-100 bg-white px-4 py-2 text-xs font-black text-violet-600 shadow-sm">
-                      {groupChats.length} مجموعة
-                    </div>
-                  )}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGroupActionError(null);
-                    setGroupDialog("create");
-                  }}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-xs font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
-                >
-                  <Plus size={15} />
-                  إنشاء مجموعة
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGroupActionError(null);
-                    setGroupDialog("join");
-                  }}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-xs font-black text-violet-700 shadow-sm transition hover:border-violet-300 hover:bg-violet-50 active:scale-[0.98]"
-                >
-                  <Users size={15} />
-                  الانضمام برمز
-                </button>
-              </div>
-            </div>
-
-            {groupChatsLoading ? (
-              <div className="grid grid-cols-1 gap-4">
-                <div className="h-32 animate-pulse rounded-[1.5rem] border border-slate-200 bg-white" />
-                <div className="h-32 animate-pulse rounded-[1.5rem] border border-slate-200 bg-white" />
-              </div>
-            ) : groupChatsError ? (
-              <div className="rounded-[1.5rem] border border-red-100 bg-red-50/70 p-6 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 text-red-600">
-                  ⚠️
-                </div>
-
-                <h3 className="mt-3 text-sm font-black text-red-700">
-                  تعذر تحميل المجموعات الدراسية
-                </h3>
-
-                <p className="mt-2 text-xs leading-6 text-red-500">
-                  {groupChatsError}
-                </p>
-              </div>
-            ) : groupChats.length === 0 ? (
-              <div className="rounded-[1.75rem] border border-dashed border-violet-200 bg-gradient-to-br from-violet-50/70 via-white to-indigo-50/60 px-6 py-10 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 text-violet-600">
-                  <Users size={25} />
-                </div>
-
-                <h3 className="mt-4 text-base font-black text-slate-800">
-                  لا توجد مجموعات دراسية بعد
-                </h3>
-
-                <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-400">
-                  لم يتم إنشاء مجموعات دراسية مرتبطة بهذا السداسي بعد.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {groupChats.map((group) => (
-                  <article
-                    key={group.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openGroupChat(group.id)}
-                    onKeyDown={(event) => {
-                      if (
-                        event.key === "Enter" ||
-                        event.key === " "
-                      ) {
-                        event.preventDefault();
-                        openGroupChat(group.id);
-                      }
-                    }}
-                    aria-label={`فتح مجموعة ${group.name}`}
-                    className="group relative cursor-pointer overflow-hidden rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-[0_12px_35px_-28px_rgba(79,70,229,0.45)] transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
-                  >
-                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 to-indigo-500" />
-
-                    <div className="flex items-start gap-4">
-                      {group.avatar_url ? (
-                        <img
-                          src={group.avatar_url}
-                          alt=""
-                          className="h-12 w-12 shrink-0 rounded-2xl border border-slate-100 object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 text-violet-600">
-                          <Users size={22} />
-                        </div>
-                      )}
-
-                      <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-base font-black text-slate-900">
-                          {group.name}
-                        </h3>
-
-                        <p className="mt-1 line-clamp-2 text-xs leading-6 text-slate-500">
-                          {group.description ||
-                            "مجموعة دراسية للتواصل وتبادل المعلومات بين الطلبة."}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${
-                          group.is_private
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-emerald-50 text-emerald-700"
-                        }`}
-                      >
-                        {group.is_private ? (
-                          <Lock size={12} />
-                        ) : (
-                          <Globe size={12} />
-                        )}
-
-                        {group.is_private
-                          ? "مجموعة خاصة"
-                          : "مجموعة عامة"}
-                      </span>
-
-                      <span className="text-[10px] font-bold text-slate-400">
-                        اضغط لفتح الدردشة
-                      </span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Modules + Subjects */}
+          {/* Modules */}
 
           <section className="min-w-0">
-            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
-                    <Layers3 size={19} />
-                  </div>
-
-                  <div>
-                    <h2 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
-                      وحدات ومقاييس السداسي
-                    </h2>
-
-                    <p className="mt-1 text-xs text-slate-400">
-                      الوحدات والمقاييس المرتبطة بهذا السداسي
-                    </p>
-                  </div>
-                </div>
+            <div className="section-heading mb-5">
+              <div className="section-icon cyan-icon">
+                <Layers3 size={21} />
               </div>
-
-              {!modulesLoading &&
-                modules.length > 0 && (
-                  <div className="self-start rounded-full border border-indigo-100 bg-white px-4 py-2 text-xs font-black text-indigo-600 shadow-sm sm:self-auto">
-                    {modules.length} وحدة
-                  </div>
-                )}
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-xl font-black text-white sm:text-2xl">
+                    البنية الأكاديمية
+                  </h2>
+                  <span className="section-tag">ACADEMIC STRUCTURE</span>
+                </div>
+                <p className="mt-1 text-xs text-slate-300">
+                  الوحدات والمقاييس المرتبطة بهذا السداسي
+                </p>
+              </div>
+              {!modulesLoading && modules.length > 0 && (
+                <span className="mr-auto rounded-full border border-cyan-400/20 bg-cyan-400/5 px-3 py-1.5 text-xs font-black text-cyan-300">
+                  {modules.length} وحدة
+                </span>
+              )}
             </div>
 
             {modulesLoading ? (
-              <div className="grid gap-5 md:grid-cols-2">
-                <div className="h-56 animate-pulse rounded-[1.75rem] border border-slate-200 bg-white" />
-                <div className="h-56 animate-pulse rounded-[1.75rem] border border-slate-200 bg-white" />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="h-56 animate-pulse rounded-3xl bg-white/[0.04]" />
+                <div className="h-56 animate-pulse rounded-3xl bg-white/[0.04]" />
               </div>
             ) : modulesError ? (
-              <div className="rounded-[1.75rem] border border-red-100 bg-red-50/70 p-6 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 text-red-600">
-                  ⚠️
-                </div>
-
-                <h3 className="mt-3 text-sm font-black text-red-700">
+              <div className="status-panel border-rose-400/20">
+                <Zap className="mx-auto text-rose-300" size={28} />
+                <h3 className="mt-3 font-black text-rose-200">
                   تعذر تحميل الوحدات والمقاييس
                 </h3>
-
-                <p className="mt-2 text-xs leading-6 text-red-500">
+                <p className="mt-2 text-sm leading-7 text-rose-200">
                   {modulesError}
                 </p>
               </div>
             ) : modules.length === 0 ? (
-              <div className="rounded-[2rem] border border-dashed border-indigo-200 bg-gradient-to-br from-indigo-50/70 via-white to-cyan-50/60 px-6 py-14 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-100 to-cyan-100 text-indigo-600 shadow-sm">
-                  <Layers3 size={28} />
+              <div className="empty-future">
+                <div className="empty-icon">
+                  <Layers3 size={30} />
                 </div>
-
-                <h3 className="mt-5 text-lg font-black text-slate-800">
+                <h3 className="mt-5 text-lg font-black text-white">
                   لا توجد وحدات لهذا السداسي
                 </h3>
-
-                <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-400">
+                <p className="mt-2 text-sm leading-7 text-slate-300">
                   لم تتم إضافة أي وحدات أكاديمية مرتبطة بهذا السداسي بعد.
                 </p>
               </div>
             ) : (
-              <div className="grid gap-5">
+              <div className="space-y-4">
                 {modules.map((module, moduleIndex) => {
-                  const isExpanded =
-                    expandedModules[module.id] ?? true;
+                  const isExpanded = expandedModules[module.id] ?? true;
 
                   return (
-                    <article
-                      key={module.id}
-                      className="group overflow-hidden rounded-[1.75rem] border border-indigo-100 bg-white shadow-[0_12px_40px_-28px_rgba(79,70,229,0.45)] transition-all duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_20px_45px_-28px_rgba(79,70,229,0.5)]"
-                    >
-                      {/* Module Header */}
-
+                    <article key={module.id} className="module-panel group">
                       <button
                         type="button"
                         onClick={() => toggleModule(module.id)}
-                        className="relative w-full overflow-hidden p-5 text-right sm:p-6"
+                        aria-expanded={isExpanded}
+                        className="relative flex w-full items-center gap-4 overflow-hidden p-4 text-right sm:p-5"
                       >
-                        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+                        <div className="module-number">
+                          {String(moduleIndex + 1).padStart(2, "0")}
+                        </div>
 
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 text-indigo-600 shadow-sm">
-                            <Layers3 size={22} />
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] text-cyan-200 transition-all group-hover:border-cyan-300/35 group-hover:shadow-[0_0_25px_-10px_rgba(34,211,238,0.5)]">
+                          <Layers3 size={22} />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] font-black tracking-wider text-cyan-200">
+                              MODULE {String(moduleIndex + 1).padStart(2, "0")}
+                            </span>
+                            <span className="h-1 w-1 rounded-full bg-slate-500" />
+                            <span className="text-[10px] font-bold text-slate-300">
+                              {module.subjects.length} مقياس
+                            </span>
                           </div>
+                          <h3 className="truncate text-base font-black text-white sm:text-lg">
+                            {module.name}
+                          </h3>
+                        </div>
 
-                          <div className="min-w-0 flex-1">
-                            <div className="mb-1 flex items-center gap-2">
-                              <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black text-indigo-600">
-                                الوحدة {moduleIndex + 1}
-                              </span>
-
-                              <span className="text-[11px] font-bold text-slate-400">
-                                {module.subjects.length} مقياس
-                              </span>
-                            </div>
-
-                            <h3 className="truncate text-base font-black text-slate-900 sm:text-lg">
-                              {module.name}
-                            </h3>
-                          </div>
-
-                          <div
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-transform duration-200 ${
-                              isExpanded ? "rotate-180" : ""
-                            }`}
-                          >
-                            <ChevronDown size={19} />
-                          </div>
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-300 transition-all duration-300 ${isExpanded ? "rotate-180 border-cyan-300/30 text-cyan-200" : ""}`}>
+                          <ChevronDown size={19} />
                         </div>
                       </button>
 
-                      {/* Subjects */}
-
                       {isExpanded && (
-                        <div className="border-t border-slate-100 bg-gradient-to-b from-slate-50/70 to-white p-4 sm:p-5">
+                        <div className="module-content border-t border-white/[0.07] p-3 sm:p-4">
                           {module.subjects.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center">
-                              <BookMarked
-                                size={24}
-                                className="mx-auto text-slate-300"
-                              />
-
-                              <p className="mt-3 text-sm font-bold text-slate-500">
+                            <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-8 text-center">
+                              <BookMarked size={25} className="mx-auto text-slate-400" />
+                              <p className="mt-3 text-sm font-bold text-slate-200">
                                 لا توجد مقاييس لهذه الوحدة
                               </p>
                             </div>
                           ) : (
-                            <div className="grid gap-3">
-                              {module.subjects.map(
-                                (subject, subjectIndex) => (
-                                  <div
-                                    key={subject.id}
-                                    className="group/subject flex min-w-0 flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm transition-all duration-200 hover:border-indigo-100 hover:bg-indigo-50/40 hover:shadow-md sm:flex-row sm:items-center"
-                                  >
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-50 to-indigo-50 text-indigo-600">
-                                      <BookOpen size={17} />
-                                    </div>
-
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex min-w-0 flex-1 items-center gap-2">
-                                        <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-slate-100 px-1.5 text-[9px] font-black text-slate-500">
-                                          {subjectIndex + 1}
-                                        </span>
-
-                                        <h4 className="min-w-0 flex-1 truncate text-sm font-black text-slate-800">
-                                          {subject.name}
-                                        </h4>
-                                      </div>
-
-                                      {subject.description && (
-                                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-400">
-                                          {subject.description}
-                                        </p>
-                                      )}
-                                    </div>
-
-                                    {/* Lessons Button */}
-
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        openSubjectLessons(subject.id)
-                                      }
-                                      className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-xs font-black text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.97]"
-                                    >
-                                      <BookOpen size={15} />
-                                      <span className="inline">
-                                        الدروس
-                                      </span>
-                                    </button>
+                            <div className="grid gap-2.5">
+                              {module.subjects.map((subject, subjectIndex) => (
+                                <div
+                                  key={subject.id}
+                                  className="subject-row group/subject"
+                                >
+                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-300/15 bg-violet-300/[0.07] text-violet-200 transition group-hover/subject:border-cyan-300/30 group-hover/subject:text-cyan-200">
+                                    <BookOpen size={18} />
                                   </div>
-                                )
-                              )}
+
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-white/[0.09] px-1.5 text-[9px] font-black text-slate-200">
+                                        {subjectIndex + 1}
+                                      </span>
+                                      <h4 className="subject-title truncate text-sm font-black">
+                                        {subject.name}
+                                      </h4>
+                                    </div>
+                                    {subject.description && (
+                                      <p className="subject-description mt-1 line-clamp-2 text-xs leading-5">
+                                        {subject.description}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => openSubjectLessons(subject.id)}
+                                    className="lesson-button"
+                                  >
+                                    <BookOpen size={15} />
+                                    <span>الدروس</span>
+                                  </button>
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>
@@ -1185,42 +945,169 @@ function SemesterSpacePageContent() {
               </div>
             )}
           </section>
+
+          {/* Group Chats */}
+
+          <section className="min-w-0">
+            <div className="section-heading mb-5">
+              <div className="section-icon violet-icon">
+                <Users size={21} />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-xl font-black text-white sm:text-2xl">
+                    مجتمع السداسي
+                  </h2>
+                  <span className="section-tag violet-tag">STUDY NETWORK</span>
+                </div>
+                <p className="mt-1 text-xs text-slate-300">
+                  تواصل وتعاون مع زملائك
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setGroupActionError(null);
+                  setGroupDialog("create");
+                }}
+                className="group-button"
+              >
+                <Plus size={16} />
+                إنشاء مجموعة
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setGroupActionError(null);
+                  setGroupDialog("join");
+                }}
+                className="group-button group-button-secondary"
+              >
+                <Users size={16} />
+                الانضمام برمز
+              </button>
+            </div>
+
+            {groupChatsLoading ? (
+              <div className="space-y-3">
+                <div className="h-32 animate-pulse rounded-3xl bg-white/[0.04]" />
+                <div className="h-32 animate-pulse rounded-3xl bg-white/[0.04]" />
+              </div>
+            ) : groupChatsError ? (
+              <div className="status-panel border-rose-400/20">
+                <Zap className="mx-auto text-rose-300" size={26} />
+                <h3 className="mt-3 text-sm font-black text-rose-200">
+                  تعذر تحميل المجموعات الدراسية
+                </h3>
+                <p className="mt-2 text-xs leading-6 text-rose-200">
+                  {groupChatsError}
+                </p>
+              </div>
+            ) : groupChats.length === 0 ? (
+              <div className="empty-future px-5 py-10">
+                <div className="empty-icon violet-empty">
+                  <Users size={27} />
+                </div>
+                <h3 className="mt-4 text-base font-black text-white">
+                  لا توجد مجموعات بعد
+                </h3>
+                <p className="mt-2 text-xs leading-7 text-slate-300">
+                  أنشئ أول مجموعة دراسية وابدأ التعاون مع زملائك.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {groupChats.map((group) => (
+                  <article
+                    key={group.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openGroupChat(group.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openGroupChat(group.id);
+                      }
+                    }}
+                    aria-label={`فتح مجموعة ${group.name}`}
+                    className="group-card"
+                  >
+                    <div className="flex items-start gap-3">
+                      {group.avatar_url ? (
+                        <img
+                          src={group.avatar_url}
+                          alt=""
+                          className="h-12 w-12 shrink-0 rounded-2xl border border-white/10 object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-violet-300/20 bg-violet-400/10 text-violet-200">
+                          <Users size={21} />
+                        </div>
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-sm font-black text-white transition-colors group-hover:text-cyan-200">
+                          {group.name}
+                        </h3>
+                        <p className="mt-1 line-clamp-2 text-xs leading-6 text-slate-300">
+                          {group.description ||
+                            "مجموعة دراسية للتواصل وتبادل المعلومات بين الطلبة."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/[0.07] pt-3">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                        group.is_private
+                          ? "border-amber-300/20 bg-amber-300/[0.07] text-amber-200"
+                          : "border-emerald-300/20 bg-emerald-300/[0.07] text-emerald-200"
+                      }`}>
+                        {group.is_private ? <Lock size={11} /> : <Globe size={11} />}
+                        {group.is_private ? "مجموعة خاصة" : "مجموعة عامة"}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-200 transition group-hover:text-cyan-100">
+                        فتح الدردشة
+                        <ArrowLeft size={12} />
+                      </span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
 
-        {/* Create / Join Group Dialog */}
+        {/* Create / Join Dialog */}
 
         {groupDialog && (
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 px-4 py-6 backdrop-blur-sm"
+            className="future-modal-backdrop"
             onMouseDown={(event) => {
-              if (event.target === event.currentTarget) {
-                closeGroupDialog();
-              }
+              if (event.target === event.currentTarget) closeGroupDialog();
             }}
           >
             <div
               role="dialog"
               aria-modal="true"
               aria-labelledby="group-dialog-title"
-              className="w-full max-w-lg rounded-[1.75rem] border border-violet-100 bg-white p-6 shadow-2xl sm:p-8"
+              className="future-modal"
               dir="rtl"
             >
               <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
-                  <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 text-violet-700">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-300/20 bg-violet-400/10 text-violet-200">
                     <Users size={23} />
                   </div>
-
-                  <h2
-                    id="group-dialog-title"
-                    className="text-xl font-black text-slate-900"
-                  >
+                  <h2 id="group-dialog-title" className="text-xl font-black text-white">
                     {groupDialog === "create"
                       ? "إنشاء مجموعة دراسية"
                       : "الانضمام إلى مجموعة"}
                   </h2>
-
-                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                  <p className="mt-2 text-sm leading-6 text-slate-300">
                     {groupDialog === "create"
                       ? `سيتم ربط المجموعة تلقائياً بـ ${semester.name}.`
                       : "أدخل رمز الدعوة الذي وصلك للانضمام إلى المجموعة."}
@@ -1232,16 +1119,15 @@ function SemesterSpacePageContent() {
                   onClick={closeGroupDialog}
                   disabled={groupActionLoading}
                   aria-label="إغلاق"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 text-slate-300 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
                 >
-                  <span className="text-2xl leading-none">×</span>
+                  <X size={18} />
                 </button>
               </div>
 
               <form
                 onSubmit={(event) => {
                   event.preventDefault();
-
                   if (groupDialog === "create") {
                     void handleCreateSemesterGroup();
                   } else {
@@ -1253,71 +1139,50 @@ function SemesterSpacePageContent() {
                 {groupDialog === "create" ? (
                   <>
                     <div>
-                      <label
-                        htmlFor="semester-group-name"
-                        className="mb-2 block text-sm font-bold text-slate-700"
-                      >
+                      <label htmlFor="semester-group-name" className="mb-2 block text-sm font-bold text-slate-200">
                         اسم المجموعة
                       </label>
-
                       <input
                         id="semester-group-name"
                         type="text"
                         value={newGroupName}
-                        onChange={(event) =>
-                          setNewGroupName(event.target.value)
-                        }
+                        onChange={(event) => setNewGroupName(event.target.value)}
                         minLength={2}
                         maxLength={100}
                         required
                         autoFocus
                         placeholder="مثلاً: مجموعة مراجعة السداسي"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                        className="future-input"
                       />
-
-                      <p className="mt-1 text-xs text-slate-400">
-                        من حرفين إلى 100 حرف.
-                      </p>
+                      <p className="mt-1.5 text-xs text-slate-400">من حرفين إلى 100 حرف.</p>
                     </div>
 
                     <div>
-                      <label
-                        htmlFor="semester-group-description"
-                        className="mb-2 block text-sm font-bold text-slate-700"
-                      >
+                      <label htmlFor="semester-group-description" className="mb-2 block text-sm font-bold text-slate-200">
                         وصف المجموعة (اختياري)
                       </label>
-
                       <textarea
                         id="semester-group-description"
                         value={newGroupDescription}
-                        onChange={(event) =>
-                          setNewGroupDescription(event.target.value)
-                        }
+                        onChange={(event) => setNewGroupDescription(event.target.value)}
                         rows={3}
                         maxLength={500}
                         placeholder="ما الهدف من هذه المجموعة؟"
-                        className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                        className="future-input resize-y"
                       />
                     </div>
                   </>
                 ) : (
                   <div>
-                    <label
-                      htmlFor="semester-group-invitation"
-                      className="mb-2 block text-sm font-bold text-slate-700"
-                    >
+                    <label htmlFor="semester-group-invitation" className="mb-2 block text-sm font-bold text-slate-200">
                       رمز الدعوة
                     </label>
-
                     <input
                       id="semester-group-invitation"
                       type="text"
                       dir="ltr"
                       value={invitationToken}
-                      onChange={(event) =>
-                        setInvitationToken(event.target.value)
-                      }
+                      onChange={(event) => setInvitationToken(event.target.value)}
                       minLength={64}
                       maxLength={64}
                       required
@@ -1325,20 +1190,14 @@ function SemesterSpacePageContent() {
                       spellCheck={false}
                       autoComplete="off"
                       placeholder="ألصق رمز الدعوة هنا"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left font-mono text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                      className="future-input text-left font-mono"
                     />
-
-                    <p className="mt-1 text-xs text-slate-400">
-                      الرمز يتكون من 64 خانة.
-                    </p>
+                    <p className="mt-1.5 text-xs text-slate-400">الرمز يتكون من 64 خانة.</p>
                   </div>
                 )}
 
                 {groupActionError && (
-                  <div
-                    role="alert"
-                    className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700"
-                  >
+                  <div role="alert" className="rounded-xl border border-rose-400/20 bg-rose-400/[0.08] px-4 py-3 text-sm leading-6 text-rose-200">
                     {groupActionError}
                   </div>
                 )}
@@ -1348,7 +1207,7 @@ function SemesterSpacePageContent() {
                     type="button"
                     onClick={closeGroupDialog}
                     disabled={groupActionLoading}
-                    className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex-1 rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-slate-300 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-50"
                   >
                     إلغاء
                   </button>
@@ -1356,14 +1215,11 @@ function SemesterSpacePageContent() {
                   <button
                     type="submit"
                     disabled={groupActionLoading}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 text-sm font-black text-white shadow-md shadow-violet-500/15 transition hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="neon-button flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {groupActionLoading ? (
                       <>
-                        <Loader2
-                          size={17}
-                          className="animate-spin"
-                        />
+                        <Loader2 size={17} className="animate-spin" />
                         جارٍ التنفيذ...
                       </>
                     ) : groupDialog === "create" ? (
@@ -1380,49 +1236,53 @@ function SemesterSpacePageContent() {
 
         {/* Categories */}
 
-        <section className="mt-8">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        <section className="mt-10">
+          <div className="section-heading mb-5">
+            <div className="section-icon cyan-icon">
+              <Radio size={21} />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-black text-white sm:text-2xl">
+                  مركز المعرفة
+                </h2>
+                <span className="section-tag">KNOWLEDGE STREAM</span>
+              </div>
+              <p className="mt-1 text-xs text-slate-300">
+                اختر نوع المحتوى الذي تريد استكشافه
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {categories.map((category) => {
               const Icon = category.icon;
-
-              const active =
-                activeFilter === category.id;
+              const active = activeFilter === category.id;
+              const styles = colorStyles[category.color];
 
               return (
                 <button
                   key={category.id}
-                  onClick={() =>
-                    setActiveFilter(category.id)
-                  }
-                  className={`group min-h-[116px] rounded-[1.35rem] border p-4 text-right transition-all duration-200 active:scale-[0.98] ${
-                    active
-                      ? `${category.activeClass} shadow-sm`
-                      : "border-slate-200/80 bg-white/80 shadow-[0_8px_25px_-20px_rgba(15,23,42,0.35)] hover:-translate-y-0.5 hover:border-indigo-100 hover:bg-white hover:shadow-md"
-                  }`}
+                  type="button"
+                  onClick={() => setActiveFilter(category.id)}
+                  aria-pressed={active}
+                  className={`filter-card ${active ? styles.active : ""}`}
                 >
-                  <div
-                    className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 ${
-                      active
-                        ? category.iconClass
-                        : "bg-slate-100 text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600"
-                    }`}
-                  >
-                    <Icon size={19} />
+                  <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl border transition-transform duration-300 group-hover:scale-110 ${styles.icon}`}>
+                    <Icon size={20} />
                   </div>
-
-                  <p
-                    className={`text-sm font-black ${
-                      active
-                        ? "text-indigo-700"
-                        : "text-slate-800"
-                    }`}
-                  >
+                  <p className={`text-sm font-black ${active ? "text-white" : "text-slate-100"}`}>
                     {category.label}
                   </p>
-
-                  <p className="mt-1 text-[11px] leading-5 text-slate-400">
+                  <p className="mt-1 text-[10px] leading-5 text-slate-300">
                     {category.description}
                   </p>
+                  {active && (
+                    <span className="mt-3 inline-flex items-center gap-1 text-[9px] font-black tracking-wider text-cyan-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_#67e8f9]" />
+                      ACTIVE FILTER
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -1434,38 +1294,46 @@ function SemesterSpacePageContent() {
         <section className="mt-6">
           {!showComposer ? (
             <button
+              type="button"
               onClick={() => setShowComposer(true)}
-              className="group flex w-full items-center gap-4 rounded-[1.5rem] border border-indigo-100/80 bg-gradient-to-r from-indigo-50/80 via-white to-cyan-50/70 p-4 text-right shadow-[0_12px_35px_-28px_rgba(79,70,229,0.45)] transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md active:scale-[0.995]"
+              className="composer-launch group"
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-indigo-500/15 transition-transform duration-200 group-hover:scale-105">
-                <Plus size={22} />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-200 transition-all group-hover:scale-105 group-hover:shadow-[0_0_30px_-10px_rgba(34,211,238,0.5)]">
+                <Plus size={23} />
               </div>
-
               <div className="min-w-0">
-                <p className="text-sm font-black text-slate-800">
+                <p className="text-sm font-black text-white">
                   شارك شيئًا مفيدًا
                 </p>
-
-                <p className="mt-1 text-xs leading-5 text-slate-400">
-                  أضف درسًا، ملخصًا،
-                  امتحانًا أو بحثًا أو
-                  موضوعًا للمناقشة
+                <p className="mt-1 text-xs leading-5 text-slate-300">
+                  أضف درسًا، ملخصًا، امتحانًا أو بحثًا أو موضوعًا للمناقشة
                 </p>
               </div>
-
-              <div className="mr-auto hidden rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold text-indigo-600 shadow-sm sm:block">
+              <div className="mr-auto hidden items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[0.07] px-4 py-2 text-xs font-bold text-cyan-200 sm:inline-flex">
+                <Sparkles size={14} />
                 ابدأ المشاركة
               </div>
             </button>
           ) : (
-            <div className="rounded-[1.75rem] border border-indigo-100 bg-white/80 p-3 shadow-sm backdrop-blur sm:p-4">
-              <AcademicComposer semesterId={semester.id} />
+            <div className="composer-panel">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-black text-white">
+                  <Sparkles size={17} className="text-cyan-300" />
+                  إنشاء محتوى أكاديمي
+                </div>
+                <span className="section-tag">NEW CONTRIBUTION</span>
+              </div>
+
+              <div className="rounded-2xl bg-white p-2 sm:p-3">
+                <AcademicComposer semesterId={semester.id} />
+              </div>
 
               <button
+                type="button"
                 onClick={() => setShowComposer(false)}
-                className="mt-3 rounded-xl px-3 py-2 text-xs font-bold text-slate-400 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700 active:scale-[0.97]"
+                className="mt-3 rounded-xl px-3 py-2 text-xs font-bold text-slate-300 transition hover:bg-white/[0.06] hover:text-white"
               >
-                إغلاق
+                إغلاق المحرر
               </button>
             </div>
           )}
@@ -1473,70 +1341,67 @@ function SemesterSpacePageContent() {
 
         {/* Posts */}
 
-        <section className="mt-9">
+        <section className="mt-10">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
-
-                <h2 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_#67e8f9]" />
+                <h2 className="text-xl font-black text-white sm:text-2xl">
                   {activeFilter === "all"
                     ? "المحتوى الأكاديمي"
-                    : categories.find(
-                        (item) => item.id === activeFilter
-                      )?.label}
+                    : categories.find((item) => item.id === activeFilter)?.label}
                 </h2>
+                <span className="section-tag">ACADEMIC FEED</span>
               </div>
-
-              <p className="mt-1.5 text-xs text-slate-400">
-                محتوى خاص بهذا السداسي
+              <p className="mt-1.5 text-xs text-slate-300">
+                المعرفة التي يشاركها طلاب هذا السداسي
               </p>
             </div>
 
-            <div className="self-start rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-500 shadow-sm sm:self-auto">
+            <div className="inline-flex items-center gap-2 self-start rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-black text-slate-200 sm:self-auto">
+              <FileText size={13} className="text-cyan-300" />
               {filteredPosts.length} محتوى
             </div>
           </div>
 
           {postsLoading ? (
             <div className="grid gap-5 md:grid-cols-2">
-              <div className="h-80 animate-pulse rounded-[1.75rem] border border-slate-200 bg-white" />
-              <div className="h-80 animate-pulse rounded-[1.75rem] border border-slate-200 bg-white" />
+              <div className="h-80 animate-pulse rounded-3xl bg-white/[0.04]" />
+              <div className="h-80 animate-pulse rounded-3xl bg-white/[0.04]" />
             </div>
           ) : filteredPosts.length === 0 ? (
-            <div className="rounded-[2rem] border border-dashed border-indigo-200 bg-gradient-to-br from-indigo-50/70 via-white to-cyan-50/60 px-6 py-16 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-100 to-cyan-100 text-2xl shadow-sm">
-                {activeFilter === "lesson"
-                  ? "📚"
-                  : activeFilter === "summary"
-                  ? "📝"
-                  : activeFilter === "exam"
-                  ? "📄"
-                  : activeFilter === "research_discussion"
-                  ? "💬"
-                  : "🎓"}
+            <div className="empty-future py-14">
+              <div className="empty-icon">
+                {activeFilter === "lesson" ? (
+                  <BookOpen size={29} />
+                ) : activeFilter === "summary" ? (
+                  <FileText size={29} />
+                ) : activeFilter === "exam" ? (
+                  <ClipboardCheck size={29} />
+                ) : activeFilter === "research_discussion" ? (
+                  <MessageSquareText size={29} />
+                ) : (
+                  <GraduationCap size={29} />
+                )}
               </div>
 
-              <h3 className="mt-5 text-lg font-black text-slate-800">
+              <h3 className="mt-5 text-lg font-black text-white">
                 لا يوجد محتوى بعد
               </h3>
-
-              <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-400">
-                كن أول من يشارك
-                محتوى مفيدًا مع
-                طلاب هذا السداسي.
+              <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-300">
+                كن أول من يشارك محتوى مفيدًا مع طلاب هذا السداسي.
               </p>
-
               <button
+                type="button"
                 onClick={() => setShowComposer(true)}
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-black text-white shadow-md shadow-indigo-500/15 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.98]"
+                className="neon-button mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white"
               >
                 <Plus size={18} />
                 إنشاء منشور
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-2">
               {filteredPosts.map((post) => (
                 <SemesterPostCard
                   key={post.id}
@@ -1548,6 +1413,13 @@ function SemesterSpacePageContent() {
             </div>
           )}
         </section>
+
+        <footer className="mt-12 border-t border-white/[0.07] py-6 text-center">
+          <div className="inline-flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-slate-400">
+            <Orbit size={13} />
+            UNISHARE ACADEMIC NETWORK · 2050
+          </div>
+        </footer>
       </div>
     </div>
   );
@@ -1563,63 +1435,44 @@ function SemesterPostCard({
   onDelete,
 }: {
   post: Post;
-  onLike: (
-    postId: string,
-    likedByMe: boolean
-  ) => Promise<void>;
+  onLike: (postId: string, likedByMe: boolean) => Promise<void>;
   onDelete: (postId: string) => Promise<void>;
 }) {
-  const [showComments, setShowComments] =
-    useState(false);
-
-  const [deleteLoading, setDeleteLoading] =
-    useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const typeConfig: Record<string, AcademicCardConfig> = {
     lesson: {
       label: "درس",
       Icon: BookOpen,
-      iconClass: "bg-blue-100 text-blue-600",
-      badgeClass: "border-blue-100 bg-blue-50 text-blue-700",
-      cardClass:
-        "border-blue-100 bg-gradient-to-br from-white via-blue-50/50 to-cyan-50/40",
-      accentClass:
-        "bg-gradient-to-r from-blue-500 to-cyan-500",
+      iconClass: "bg-blue-400/10 text-blue-300",
+      badgeClass: "border-blue-300/20 bg-blue-400/[0.08] text-blue-200",
+      cardClass: "",
+      accentClass: "from-blue-400 to-cyan-300",
     },
-
     summary: {
       label: "ملخص",
       Icon: FileText,
-      iconClass: "bg-indigo-100 text-indigo-600",
-      badgeClass:
-        "border-indigo-100 bg-indigo-50 text-indigo-700",
-      cardClass:
-        "border-indigo-100 bg-gradient-to-br from-white via-indigo-50/50 to-violet-50/40",
-      accentClass:
-        "bg-gradient-to-r from-indigo-500 to-violet-500",
+      iconClass: "bg-indigo-400/10 text-indigo-300",
+      badgeClass: "border-indigo-300/20 bg-indigo-400/[0.08] text-indigo-200",
+      cardClass: "",
+      accentClass: "from-indigo-400 to-violet-300",
     },
-
     exam: {
       label: "امتحان",
       Icon: ClipboardCheck,
-      iconClass: "bg-cyan-100 text-cyan-600",
-      badgeClass: "border-cyan-100 bg-cyan-50 text-cyan-700",
-      cardClass:
-        "border-cyan-100 bg-gradient-to-br from-white via-cyan-50/50 to-blue-50/40",
-      accentClass:
-        "bg-gradient-to-r from-cyan-500 to-blue-500",
+      iconClass: "bg-cyan-400/10 text-cyan-300",
+      badgeClass: "border-cyan-300/20 bg-cyan-400/[0.08] text-cyan-200",
+      cardClass: "",
+      accentClass: "from-cyan-400 to-blue-300",
     },
-
     research_discussion: {
       label: "بحوث ومناقشات",
       Icon: MessageSquareText,
-      iconClass: "bg-purple-100 text-purple-600",
-      badgeClass:
-        "border-purple-100 bg-purple-50 text-purple-700",
-      cardClass:
-        "border-purple-100 bg-gradient-to-br from-white via-purple-50/50 to-indigo-50/40",
-      accentClass:
-        "bg-gradient-to-r from-purple-500 to-indigo-500",
+      iconClass: "bg-purple-400/10 text-purple-300",
+      badgeClass: "border-purple-300/20 bg-purple-400/[0.08] text-purple-200",
+      cardClass: "",
+      accentClass: "from-purple-400 to-fuchsia-300",
     },
   };
 
@@ -1632,30 +1485,20 @@ function SemesterPostCard({
   }
 
   async function handleDelete() {
-    if (deleteLoading) {
-      return;
-    }
+    if (deleteLoading) return;
 
     const confirmed = window.confirm(
       "هل أنت متأكد من حذف هذا المنشور؟\nلا يمكن التراجع عن هذه العملية."
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       setDeleteLoading(true);
       await onDelete(post.id);
     } catch (error) {
-      console.error(
-        "SEMESTER POST DELETE ERROR:",
-        error
-      );
-
-      window.alert(
-        "تعذر حذف المنشور. حاول مرة أخرى."
-      );
+      console.error("SEMESTER POST DELETE ERROR:", error);
+      window.alert("تعذر حذف المنشور. حاول مرة أخرى.");
     } finally {
       setDeleteLoading(false);
     }
@@ -1664,40 +1507,29 @@ function SemesterPostCard({
   const CardIcon = config?.Icon ?? GraduationCap;
 
   return (
-    <article
-      className={`group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[1.75rem] border shadow-[0_12px_40px_-28px_rgba(15,23,42,0.45)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_45px_-28px_rgba(15,23,42,0.55)] active:scale-[0.995] ${
-        config?.cardClass ??
-        "border-slate-200 bg-gradient-to-br from-white via-slate-50 to-indigo-50/30"
-      }`}
-    >
-      <div
-        className={`absolute inset-x-0 top-0 h-1 ${
-          config?.accentClass ??
-          "bg-gradient-to-r from-blue-500 to-indigo-500"
-        }`}
-      />
+    <article className="post-card group relative flex h-full min-w-0 flex-col overflow-hidden">
+      <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-l ${config?.accentClass ?? "from-cyan-400 to-violet-400"}`} />
 
-      <div className="flex flex-1 flex-col p-5 pt-6 sm:p-6 sm:pt-7">
-        <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-1 flex-col p-5 pt-6 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             {post.author.avatar ? (
               <img
                 src={post.author.avatar}
                 alt=""
-                className="h-11 w-11 shrink-0 rounded-full border-2 border-white object-cover shadow-sm"
+                className="h-11 w-11 shrink-0 rounded-full border border-cyan-300/20 object-cover shadow-[0_0_18px_-8px_rgba(34,211,238,0.5)]"
               />
             ) : (
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-indigo-100 to-cyan-100 font-black text-indigo-600 shadow-sm">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-cyan-300/20 bg-gradient-to-br from-cyan-400/20 to-violet-500/20 font-black text-cyan-100">
                 {post.author.name?.charAt(0)?.toUpperCase() ?? "U"}
               </div>
             )}
 
             <div className="min-w-0">
-              <p className="truncate text-sm font-black text-slate-800">
+              <p className="truncate text-sm font-black text-slate-100">
                 {post.author.name}
               </p>
-
-              <p className="mt-0.5 truncate text-xs text-slate-400">
+              <p className="mt-0.5 truncate text-[11px] text-slate-400">
                 {post.createdAt}
               </p>
             </div>
@@ -1705,10 +1537,8 @@ function SemesterPostCard({
 
           <div className="flex shrink-0 items-center gap-2">
             {config && (
-              <div
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-black ${config.badgeClass}`}
-              >
-                <CardIcon size={13} />
+              <div className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-black ${config.badgeClass}`}>
+                <CardIcon size={12} />
                 {config.label}
               </div>
             )}
@@ -1718,21 +1548,14 @@ function SemesterPostCard({
                 type="button"
                 onClick={handleDelete}
                 disabled={deleteLoading}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.07] text-slate-400 transition hover:border-rose-400/20 hover:bg-rose-400/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="حذف المنشور"
                 title="حذف المنشور"
               >
                 {deleteLoading ? (
-                  <Loader2
-                    size={18}
-                    className="animate-spin"
-                    aria-hidden="true"
-                  />
+                  <Loader2 size={17} className="animate-spin" aria-hidden="true" />
                 ) : (
-                  <Trash2
-                    size={18}
-                    aria-hidden="true"
-                  />
+                  <Trash2 size={17} aria-hidden="true" />
                 )}
               </button>
             )}
@@ -1740,103 +1563,768 @@ function SemesterPostCard({
         </div>
 
         <div className="mt-6">
-          <div className="flex items-center gap-2">
-            <div
-              className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                config?.iconClass ??
-                "bg-indigo-100 text-indigo-600"
-              }`}
-            >
+          <div className="flex items-center gap-2.5">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 ${config?.iconClass ?? "bg-cyan-400/10 text-cyan-300"}`}>
               <CardIcon size={17} />
             </div>
-
             <div>
-              <p className="text-[11px] font-bold text-slate-400">
+              <p className="text-[10px] font-bold text-slate-400">
                 محتوى أكاديمي
               </p>
-
-              <h3 className="text-base font-black text-slate-900">
+              <h3 className="text-sm font-black text-slate-100">
                 {config?.label ?? "منشور أكاديمي"}
               </h3>
             </div>
           </div>
 
-          <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700 sm:text-[15px]">
+          <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-8 text-slate-200 sm:text-[15px]">
             {post.content}
           </p>
         </div>
 
-        {post.images_urls &&
-          post.images_urls.length > 0 && (
-            <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              {post.images_urls.map((image, index) => (
-                <img
-                  key={`${image}-${index}`}
-                  src={image}
-                  alt=""
-                  className="max-h-72 w-full rounded-2xl border border-white/80 object-cover shadow-sm transition-transform duration-300 group-hover:scale-[1.01]"
-                />
-              ))}
-            </div>
-          )}
+        {post.images_urls && post.images_urls.length > 0 && (
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            {post.images_urls.map((image, index) => (
+              <img
+                key={`${image}-${index}`}
+                src={image}
+                alt=""
+                className="max-h-72 w-full rounded-2xl border border-white/10 object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+              />
+            ))}
+          </div>
+        )}
 
         {(post.pdf_url || post.pdf) && (
           <a
             href={post.pdf_url ?? post.pdf ?? undefined}
             target="_blank"
             rel="noreferrer"
-            className="mt-5 flex items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 transition-all duration-200 hover:border-indigo-200 hover:bg-indigo-50 active:scale-[0.99]"
+            className="mt-5 flex items-center gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.05] p-4 transition-all hover:border-cyan-300/30 hover:bg-cyan-300/[0.09]"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/15 bg-cyan-300/10 text-cyan-200">
               <Paperclip size={18} />
             </div>
-
             <div className="min-w-0">
-              <p className="text-sm font-black text-indigo-700">
-                ملف PDF
-              </p>
-
-              <p className="mt-0.5 text-xs text-indigo-500">
-                فتح الملف
-              </p>
+              <p className="text-sm font-black text-cyan-100">ملف PDF</p>
+              <p className="mt-0.5 text-xs text-cyan-200/70">فتح الملف</p>
             </div>
+            <ArrowLeft size={16} className="mr-auto text-cyan-300/80" />
           </a>
         )}
 
         <div className="flex-1" />
       </div>
 
-      <div className="flex items-center gap-5 border-t border-slate-200/70 px-5 py-3 text-xs font-semibold text-slate-400 sm:px-6">
-        <span className="transition-colors hover:text-rose-500">
-          ❤️ {post.likes}
-        </span>
-
-        <span className="transition-colors hover:text-indigo-500">
-          💬 {post.comments}
-        </span>
+      <div className="flex items-center gap-5 border-t border-white/[0.07] px-5 py-3 text-xs font-semibold text-slate-300 sm:px-6">
+        <span>❤️ {post.likes}</span>
+        <span>💬 {post.comments}</span>
       </div>
 
-      <div className="border-t border-slate-200/70 bg-white/35">
+      <div className="border-t border-white/[0.07] bg-white/[0.02]">
         <PostActions
           postId={post.id}
           likedByMe={post.likedByMe}
           onLike={handleLike}
           showComments={showComments}
-          onComment={() =>
-            setShowComments((previous) => !previous)
-          }
+          onComment={() => setShowComments((previous) => !previous)}
           onShare={() => {}}
         />
       </div>
 
       {showComments && (
-        <div className="border-t border-slate-200/70 bg-slate-50/60">
+        <div className="border-t border-white/[0.07] bg-white/[0.03]">
           <CommentsList postId={post.id} />
         </div>
       )}
     </article>
   );
 }
+
+// ======================================================
+// Future UI Styles
+// ======================================================
+
+const futureStyles = `
+  .future-space {
+    isolation: isolate;
+    position: relative;
+    font-family: inherit;
+  }
+
+  /* Semester title: force white color */
+
+  .future-space .semester-title {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    font-weight: 900;
+  }
+
+  /* Improve academic text contrast */
+
+  .future-space .subject-title {
+    color: #f8fafc !important;
+    font-weight: 900;
+    line-height: 1.8;
+    text-shadow: 0 1px 12px rgba(34,211,238,.08);
+  }
+
+  .future-space .subject-description {
+    color: #cbd5e1 !important;
+    line-height: 1.8;
+  }
+
+  .future-space .module-panel h3 {
+    color: #ffffff;
+  }
+
+  .future-space .module-panel .text-slate-500 {
+    color: #cbd5e1;
+  }
+
+  .future-space .module-panel .text-slate-400 {
+    color: #e2e8f0;
+  }
+
+  .future-space .section-heading p {
+    color: #cbd5e1;
+  }
+
+  .space-grid,
+  .hero-grid {
+    background-image:
+      linear-gradient(rgba(103,232,249,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(103,232,249,.035) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(to bottom, black, transparent 90%);
+  }
+
+  .space-orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(75px);
+    opacity: .12;
+    animation: orbFloat 14s ease-in-out infinite alternate;
+  }
+
+  .orb-one {
+    width: 320px;
+    height: 320px;
+    background: #06b6d4;
+    top: 8%;
+    right: -180px;
+  }
+
+  .orb-two {
+    width: 360px;
+    height: 360px;
+    background: #7c3aed;
+    top: 48%;
+    left: -200px;
+    animation-delay: -5s;
+  }
+
+  .orb-three {
+    width: 250px;
+    height: 250px;
+    background: #2563eb;
+    bottom: 2%;
+    right: 30%;
+    animation-delay: -8s;
+  }
+
+  .hero-panel {
+    background:
+      radial-gradient(ellipse at 80% 0%, rgba(34,211,238,.12), transparent 45%),
+      radial-gradient(ellipse at 10% 100%, rgba(139,92,246,.16), transparent 45%),
+      linear-gradient(125deg, #0c1930 0%, #0a1024 48%, #11102b 100%);
+  }
+
+  .hero-stat {
+    min-width: 0;
+    border-left: 1px solid rgba(255,255,255,.08);
+    padding-inline: 12px;
+  }
+
+  .hero-stat:last-child {
+    border-left: 0;
+  }
+
+  .hero-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(103,232,249,.18);
+    border-radius: 999px;
+    background: rgba(34,211,238,.055);
+    padding: 9px 14px;
+    color: #a5f3fc;
+    font-size: 11px;
+    font-weight: 800;
+    backdrop-filter: blur(12px);
+  }
+
+  .glass-panel {
+    border: 1px solid rgba(255,255,255,.1);
+    background: rgba(13,22,43,.78);
+    box-shadow: 0 25px 80px -40px rgba(34,211,238,.2);
+    backdrop-filter: blur(20px);
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-width: 0;
+  }
+
+  .section-icon {
+    display: flex;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    border: 1px solid rgba(255,255,255,.1);
+  }
+
+  .cyan-icon {
+    color: #67e8f9;
+    background: rgba(34,211,238,.09);
+    border-color: rgba(34,211,238,.2);
+  }
+
+  .violet-icon {
+    color: #c4b5fd;
+    background: rgba(139,92,246,.1);
+    border-color: rgba(167,139,250,.2);
+  }
+
+  .section-tag {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(103,232,249,.15);
+    border-radius: 999px;
+    padding: 4px 8px;
+    color: rgba(103,232,249,.85);
+    background: rgba(34,211,238,.04);
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: .12em;
+  }
+
+  .violet-tag {
+    color: rgba(196,181,253,.9);
+    border-color: rgba(167,139,250,.18);
+    background: rgba(139,92,246,.06);
+  }
+
+  .module-panel {
+    overflow: hidden;
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 23px;
+    background:
+      linear-gradient(120deg, rgba(15,30,54,.96), rgba(12,17,38,.96));
+    box-shadow: 0 15px 45px -35px rgba(34,211,238,.35);
+    transition: border-color .3s ease, transform .3s ease, box-shadow .3s ease;
+  }
+
+  .module-panel:hover {
+    border-color: rgba(103,232,249,.3);
+    box-shadow: 0 20px 55px -35px rgba(34,211,238,.4);
+    transform: translateY(-2px);
+  }
+
+  .module-number {
+    display: flex;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    border: 1px solid rgba(103,232,249,.15);
+    background: rgba(34,211,238,.05);
+    color: #a5f3fc;
+    font-size: 9px;
+    font-weight: 900;
+  }
+
+  .module-content {
+    animation: revealContent .3s ease both;
+    background: rgba(3,8,22,.35);
+  }
+
+  .subject-row {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 17px;
+    background: rgba(255,255,255,.035);
+    padding: 13px;
+    transition: border-color .25s ease, background .25s ease;
+  }
+
+  .subject-row:hover {
+    border-color: rgba(103,232,249,.3);
+    background: rgba(34,211,238,.055);
+  }
+
+  .lesson-button {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid rgba(103,232,249,.25);
+    border-radius: 11px;
+    background: linear-gradient(110deg, rgba(8,145,178,.22), rgba(79,70,229,.2));
+    padding: 9px 13px;
+    color: #a5f3fc;
+    font-size: 11px;
+    font-weight: 900;
+    transition: all .2s ease;
+  }
+
+  .lesson-button:hover {
+    border-color: rgba(103,232,249,.5);
+    background: rgba(8,145,178,.25);
+    box-shadow: 0 0 22px -10px rgba(34,211,238,.6);
+    transform: translateY(-1px);
+  }
+
+  /* Advertisement Space */
+
+  .advertisement-card {
+    position: relative;
+    overflow: hidden;
+    min-height: 180px;
+    border: 1px solid rgba(103,232,249,.22);
+    border-radius: 25px;
+    background:
+      radial-gradient(ellipse at 85% 0%, rgba(34,211,238,.15), transparent 42%),
+      radial-gradient(ellipse at 5% 100%, rgba(139,92,246,.18), transparent 45%),
+      linear-gradient(120deg, #101d37, #11132d 55%, #171333);
+    box-shadow: 0 20px 65px -45px rgba(34,211,238,.4);
+    transition: border-color .3s ease, box-shadow .3s ease;
+  }
+
+  .advertisement-card:hover {
+    border-color: rgba(103,232,249,.4);
+    box-shadow: 0 25px 75px -42px rgba(34,211,238,.35);
+  }
+
+  .advertisement-card::before {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(103,232,249,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(103,232,249,.035) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(to left, black, transparent 85%);
+    content: "";
+    pointer-events: none;
+  }
+
+  .advertisement-glow {
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    right: 35%;
+    top: -120px;
+    border-radius: 50%;
+    background: rgba(34,211,238,.15);
+    filter: blur(55px);
+    pointer-events: none;
+  }
+
+  .advertisement-orbit {
+    position: absolute;
+    width: 210px;
+    height: 210px;
+    border: 1px solid rgba(103,232,249,.12);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .advertisement-orbit-one {
+    left: -100px;
+    bottom: -150px;
+  }
+
+  .advertisement-orbit-two {
+    left: -65px;
+    bottom: -115px;
+    border-color: rgba(167,139,250,.16);
+  }
+
+  .advertisement-icon {
+    display: flex;
+    width: 62px;
+    height: 62px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(103,232,249,.3);
+    border-radius: 20px;
+    background: linear-gradient(145deg, rgba(34,211,238,.16), rgba(139,92,246,.16));
+    color: #a5f3fc;
+    box-shadow: 0 0 35px -12px rgba(34,211,238,.5);
+  }
+
+  .advertisement-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid rgba(103,232,249,.2);
+    border-radius: 999px;
+    background: rgba(34,211,238,.07);
+    padding: 5px 9px;
+    color: #67e8f9;
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: .12em;
+  }
+
+  .advertisement-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #cbd5e1;
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .advertisement-badge {
+    display: flex;
+    width: 58px;
+    height: 58px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(167,139,250,.25);
+    border-radius: 19px;
+    background: rgba(139,92,246,.12);
+    color: #c4b5fd;
+    box-shadow: 0 0 30px -12px rgba(139,92,246,.55);
+  }
+
+  .advertisement-footer {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    background: rgba(3,8,22,.22);
+    padding: 11px 22px;
+    color: #a5f3fc;
+    font-size: 9px;
+    font-weight: 800;
+  }
+
+  .group-button {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid rgba(167,139,250,.25);
+    border-radius: 13px;
+    background: linear-gradient(110deg, rgba(124,58,237,.25), rgba(79,70,229,.2));
+    padding: 12px 9px;
+    color: #ddd6fe;
+    font-size: 11px;
+    font-weight: 900;
+    transition: all .25s ease;
+  }
+
+  .group-button:hover {
+    border-color: rgba(196,181,253,.5);
+    background: rgba(124,58,237,.3);
+    box-shadow: 0 0 25px -12px rgba(167,139,250,.6);
+    transform: translateY(-2px);
+  }
+
+  .group-button-secondary {
+    border-color: rgba(103,232,249,.2);
+    background: rgba(34,211,238,.045);
+    color: #a5f3fc;
+  }
+
+  .group-button-secondary:hover {
+    border-color: rgba(103,232,249,.45);
+    background: rgba(34,211,238,.1);
+  }
+
+  .group-card {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid rgba(167,139,250,.2);
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(31,25,60,.85), rgba(13,21,43,.95));
+    padding: 17px;
+    transition: all .25s ease;
+  }
+
+  .group-card::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(to bottom, #a78bfa, #22d3ee);
+    content: "";
+    opacity: .7;
+  }
+
+  .group-card:hover {
+    border-color: rgba(167,139,250,.4);
+    box-shadow: 0 15px 40px -25px rgba(139,92,246,.5);
+    transform: translateY(-3px);
+  }
+
+  .group-card:focus-visible,
+  .filter-card:focus-visible,
+  .lesson-button:focus-visible,
+  .group-button:focus-visible {
+    outline: 2px solid #67e8f9;
+    outline-offset: 3px;
+  }
+
+  .status-panel,
+  .empty-future {
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 24px;
+    background: rgba(15,23,42,.65);
+    padding: 38px 22px;
+    text-align: center;
+  }
+
+  .empty-future {
+    border-style: dashed;
+    border-color: rgba(103,232,249,.18);
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(34,211,238,.06), transparent 65%),
+      rgba(15,23,42,.55);
+  }
+
+  .empty-icon {
+    display: flex;
+    width: 62px;
+    height: 62px;
+    align-items: center;
+    justify-content: center;
+    margin-inline: auto;
+    border: 1px solid rgba(103,232,249,.2);
+    border-radius: 20px;
+    background: rgba(34,211,238,.08);
+    color: #67e8f9;
+    box-shadow: 0 0 35px -15px rgba(34,211,238,.5);
+  }
+
+  .violet-empty {
+    border-color: rgba(167,139,250,.2);
+    background: rgba(139,92,246,.09);
+    color: #c4b5fd;
+  }
+
+  .filter-card {
+    min-height: 145px;
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 19px;
+    background: rgba(15,23,42,.68);
+    padding: 15px;
+    text-align: right;
+    transition: all .25s ease;
+  }
+
+  .filter-card:hover {
+    border-color: rgba(103,232,249,.25);
+    background: rgba(15,30,54,.9);
+    transform: translateY(-3px);
+  }
+
+  .composer-launch {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 15px;
+    border: 1px solid rgba(103,232,249,.18);
+    border-radius: 22px;
+    background:
+      radial-gradient(ellipse at 0% 50%, rgba(34,211,238,.09), transparent 55%),
+      linear-gradient(110deg, rgba(15,30,54,.9), rgba(20,18,49,.9));
+    padding: 17px;
+    text-align: right;
+    transition: all .25s ease;
+  }
+
+  .composer-launch:hover {
+    border-color: rgba(103,232,249,.4);
+    box-shadow: 0 15px 45px -30px rgba(34,211,238,.5);
+    transform: translateY(-2px);
+  }
+
+  .composer-panel {
+    border: 1px solid rgba(103,232,249,.2);
+    border-radius: 24px;
+    background: rgba(12,22,42,.88);
+    padding: 15px;
+    box-shadow: 0 20px 60px -40px rgba(34,211,238,.35);
+  }
+
+  .post-card {
+    border: 1px solid rgba(148,163,184,.15);
+    border-radius: 25px;
+    background:
+      radial-gradient(ellipse at 100% 0%, rgba(34,211,238,.045), transparent 42%),
+      linear-gradient(145deg, rgba(15,25,47,.97), rgba(10,15,33,.97));
+    box-shadow: 0 18px 55px -40px rgba(0,0,0,.8);
+    transition: border-color .3s ease, transform .3s ease, box-shadow .3s ease;
+  }
+
+  .post-card:hover {
+    border-color: rgba(103,232,249,.23);
+    box-shadow: 0 25px 65px -42px rgba(34,211,238,.2);
+    transform: translateY(-3px);
+  }
+
+  .future-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    background: rgba(2,6,18,.82);
+    padding: 24px 16px;
+    backdrop-filter: blur(14px);
+    animation: fadeIn .2s ease both;
+  }
+
+  .future-modal {
+    width: 100%;
+    max-width: 510px;
+    border: 1px solid rgba(167,139,250,.25);
+    border-radius: 25px;
+    background:
+      radial-gradient(ellipse at 100% 0%, rgba(139,92,246,.13), transparent 50%),
+      linear-gradient(145deg, #111a33, #0a1022);
+    padding: 25px;
+    box-shadow: 0 30px 100px -30px rgba(0,0,0,.9), 0 0 50px -25px rgba(139,92,246,.35);
+    animation: modalEnter .25s ease both;
+  }
+
+  .future-input {
+    width: 100%;
+    border: 1px solid rgba(148,163,184,.2);
+    border-radius: 13px;
+    background: rgba(3,8,22,.55);
+    padding: 13px 15px;
+    color: #f1f5f9;
+    font-size: 13px;
+    outline: none;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+
+  .future-input::placeholder {
+    color: #94a3b8;
+  }
+
+  .future-input:focus {
+    border-color: rgba(103,232,249,.55);
+    background: rgba(3,8,22,.8);
+    box-shadow: 0 0 0 3px rgba(34,211,238,.1);
+  }
+
+  .neon-button {
+    border: 1px solid rgba(103,232,249,.35);
+    background: linear-gradient(105deg, #0891b2, #4f46e5);
+    box-shadow: 0 8px 25px -12px rgba(34,211,238,.65);
+    transition: all .2s ease;
+  }
+
+  .neon-button:hover {
+    box-shadow: 0 12px 35px -12px rgba(34,211,238,.75);
+    filter: brightness(1.12);
+    transform: translateY(-2px);
+  }
+
+  .animate-spin-slow {
+    animation: slowSpin 12s linear infinite;
+  }
+
+  @keyframes slowSpin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes orbFloat {
+    from { transform: translate3d(0,0,0) scale(1); }
+    to { transform: translate3d(25px,-35px,0) scale(1.12); }
+  }
+
+  @keyframes revealContent {
+    from { opacity: 0; transform: translateY(-7px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes modalEnter {
+    from { opacity: 0; transform: translateY(12px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @media (min-width: 640px) {
+    .subject-row {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .hero-stat {
+      padding-inline: 7px;
+    }
+
+    .hero-stat span {
+      line-height: 1.5;
+    }
+
+    .filter-card {
+      min-height: 135px;
+      padding: 12px;
+    }
+
+    .future-modal {
+      padding: 19px;
+    }
+
+    .advertisement-footer {
+      padding-inline: 14px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .future-space *,
+    .future-space *::before,
+    .future-space *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: .01ms !important;
+    }
+  }
+`;
 
 // ======================================================
 // Page Provider
