@@ -24,6 +24,8 @@ import {
 
 import { supabase } from "../../../lib/supabaseClient";
 
+import { useAuth } from "../../auth/context/AuthContext";
+
 import { useFeed } from "../context/FeedContext";
 
 import type {
@@ -36,6 +38,7 @@ import type {
 
 interface AcademicComposerProps {
   semesterId: string;
+  onSuccess?: () => void;
 }
 
 // =====================================================
@@ -117,8 +120,10 @@ const academicYears = [
 
 export default function AcademicComposer({
   semesterId,
+  onSuccess,
 }: AcademicComposerProps) {
   const { createPost } = useFeed();
+  const { user, loading: authLoading } = useAuth();
 
   // ===================================================
   // Form State
@@ -214,6 +219,21 @@ export default function AcademicComposer({
       setMessage(null);
       setMessageType(null);
 
+      // انتظر حتى ينتهي AuthContext من استعادة جلسة المستخدم.
+      // لا تستدعِ supabase.auth.getUser() قبل اكتمال التهيئة.
+      if (authLoading) {
+        setCheckingSemester(true);
+        return;
+      }
+
+      if (!user) {
+        setCheckingSemester(false);
+        setSemesterValid(false);
+        setMessage("يجب تسجيل الدخول أولًا.");
+        setMessageType("error");
+        return;
+      }
+
       if (!semesterId) {
         setCheckingSemester(false);
 
@@ -227,24 +247,6 @@ export default function AcademicComposer({
       }
 
       try {
-        // ---------------------------------------------
-        // Current User
-        // ---------------------------------------------
-
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError) {
-          throw userError;
-        }
-
-        if (!user) {
-          throw new Error(
-            "يجب تسجيل الدخول أولًا."
-          );
-        }
 
         // ---------------------------------------------
         // Profile
@@ -391,7 +393,7 @@ export default function AcademicComposer({
     return () => {
       cancelled = true;
     };
-  }, [semesterId]);
+  }, [semesterId, authLoading, user?.id]);
 
   // ===================================================
   // Load Modules + Subjects
@@ -427,7 +429,8 @@ export default function AcademicComposer({
           .order("name", {
             ascending: true,
           });
-                  if (modulesError) {
+
+        if (modulesError) {
           throw modulesError;
         }
 
@@ -792,6 +795,7 @@ export default function AcademicComposer({
         semesterId,
       });
 
+      onSuccess?.();
       resetForm();
 
       setMessage(
@@ -834,14 +838,125 @@ export default function AcademicComposer({
   return (
     <section
       dir="rtl"
-      className="
-        overflow-hidden
-        rounded-[28px]
-        border border-slate-200
-        bg-white
-        shadow-[0_12px_40px_rgba(15,23,42,0.06)]
-      "
+      className="future-composer relative overflow-hidden rounded-[28px] border border-cyan-300/15 bg-[#081426] shadow-[0_20px_70px_-35px_rgba(34,211,238,0.28)]"
     >
+
+      <style>{`
+        .future-composer {
+          color: #e2e8f0;
+          background:
+            radial-gradient(ellipse at 100% 0%, rgba(34,211,238,.10), transparent 38%),
+            radial-gradient(ellipse at 0% 100%, rgba(124,58,237,.10), transparent 42%),
+            linear-gradient(145deg, #0b1930 0%, #081426 55%, #0b1027 100%) !important;
+          color-scheme: dark;
+        }
+        .future-composer > div:first-of-type {
+          border-color: rgba(103,232,249,.13) !important;
+          background: linear-gradient(115deg, rgba(8,145,178,.17), rgba(79,70,229,.16), rgba(15,23,42,.18)) !important;
+        }
+        .future-composer [class~="bg-white"],
+        .future-composer [class~="bg-slate-50"],
+        .future-composer [class~="bg-slate-50/60"],
+        .future-composer [class~="bg-slate-50/70"] {
+          background: rgba(5,15,31,.72) !important;
+        }
+        .future-composer [class~="border-slate-200"],
+        .future-composer [class~="border-slate-100"] {
+          border-color: rgba(148,163,184,.18) !important;
+        }
+        .future-composer [class~="text-slate-900"],
+        .future-composer [class~="text-slate-800"],
+        .future-composer [class~="text-slate-700"] {
+          color: #f1f5f9 !important;
+        }
+        .future-composer [class~="text-slate-500"],
+        .future-composer [class~="text-slate-400"] {
+          color: #a9bad0 !important;
+        }
+        .future-composer label,
+        .future-composer h2,
+        .future-composer h3 {
+          color: #f8fafc !important;
+        }
+        .future-composer input,
+        .future-composer select,
+        .future-composer textarea {
+          border: 1px solid rgba(148,163,184,.22) !important;
+          background: rgba(3,10,23,.72) !important;
+          color: #f1f5f9 !important;
+          color-scheme: dark;
+        }
+        .future-composer input::placeholder,
+        .future-composer textarea::placeholder {
+          color: #8295ae !important;
+        }
+        .future-composer input:focus,
+        .future-composer select:focus,
+        .future-composer textarea:focus {
+          border-color: rgba(103,232,249,.65) !important;
+          box-shadow: 0 0 0 3px rgba(34,211,238,.10) !important;
+        }
+        .future-composer option,
+        .future-composer optgroup {
+          background: #0b1930;
+          color: #f1f5f9;
+        }
+        .future-composer button:not([type="submit"]) {
+          transition: border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
+        }
+        .future-composer button[type="submit"] {
+          border: 1px solid rgba(103,232,249,.35) !important;
+          background: linear-gradient(105deg,#0891b2,#4f46e5) !important;
+          box-shadow: 0 10px 28px -13px rgba(34,211,238,.75) !important;
+        }
+        .future-composer button[type="submit"]:hover:not(:disabled) {
+          filter: brightness(1.12);
+          transform: translateY(-2px);
+        }
+        .future-composer button:disabled {
+          cursor: not-allowed;
+        }
+        .future-composer [class*="rounded-2xl"][class*="border"] {
+          border-color: rgba(103,232,249,.15);
+        }
+        .future-composer [class*="bg-indigo-"] {
+          background-color: rgba(8,145,178,.18) !important;
+          color: #a5f3fc !important;
+        }
+        .future-composer [class*="text-indigo-"] {
+          color: #a5f3fc !important;
+        }
+        .future-composer [class*="border-indigo-"] {
+          border-color: rgba(103,232,249,.35) !important;
+        }
+        .future-composer [class*="bg-red-50"],
+        .future-composer [class*="bg-red-100"] {
+          background: rgba(127,29,29,.18) !important;
+        }
+        .future-composer [class*="border-red-"] {
+          border-color: rgba(248,113,113,.25) !important;
+        }
+        .future-composer [class*="text-red-"] {
+          color: #fda4af !important;
+        }
+        .future-composer [class*="bg-emerald-50"] {
+          background: rgba(6,95,70,.20) !important;
+        }
+        .future-composer [class*="text-emerald-"] {
+          color: #6ee7b7 !important;
+        }
+        @media (max-width: 640px) {
+          .future-composer { border-radius: 22px !important; }
+          .future-composer form { padding: 16px !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .future-composer *, .future-composer *::before, .future-composer *::after {
+            transition-duration: .01ms !important;
+            animation-duration: .01ms !important;
+          }
+        }
+      `}</style>
+
       {/* =================================================
           Header
       ================================================= */}
@@ -1988,4 +2103,6 @@ function ImagePreview({
     </div>
     );
 }
+
+
 
