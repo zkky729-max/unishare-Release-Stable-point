@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Navigate,
@@ -10,6 +11,14 @@ import {
 // =====================================================
 
 import HomePage from "./features/home/pages/HomePage";
+import AboutPage from "./features/about/pages/AboutPage";
+
+// =====================================================
+// VOLUNTEER
+// =====================================================
+
+import VolunteerPage from "./features/volunteer/pages/VolunteerPage";
+import VolunteerApplyPage from "./features/volunteer/pages/VolunteerApplyPage";
 
 // =====================================================
 // AUTH
@@ -127,6 +136,19 @@ export default function App() {
         {/* PUBLIC ROUTES */}
 
         <Route path="/" element={<HomePage />} />
+
+        <Route path="/about" element={<AboutPage />} />
+
+        {/* VOLUNTEER ROUTES */}
+
+        <Route path="/volunteer" element={<VolunteerPage />} />
+
+        <Route
+          path="/volunteer/apply"
+          element={<VolunteerApplyPage />}
+        />
+
+        {/* AUTH */}
 
         <Route path="/login" element={<LoginPage />} />
 

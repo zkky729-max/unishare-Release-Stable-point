@@ -235,7 +235,26 @@ export default function HomePage() {
             </span>
           </button>
 
-          <div aria-hidden="true" />
+          <nav
+            aria-label="التنقل الرئيسي"
+            className="hidden items-center justify-end gap-2 sm:flex"
+          >
+            <button
+              type="button"
+              onClick={() => navigate("/about")}
+              className="rounded-xl px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 sm:px-4 sm:text-sm"
+            >
+              من نحن
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/volunteer")}
+              className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 sm:px-4 sm:text-sm"
+            >
+              انضم إلينا
+            </button>
+          </nav>
         </div>
       </header>
 
@@ -260,9 +279,9 @@ export default function HomePage() {
                 حيث تلتقي العقول وتصنع المعرفة
               </div>
 
-              <h1 className="unishare-entrance text-4xl font-black leading-[1.3] tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl">
+              <h1 className="unishare-entrance text-4xl font-black leading-[1.3] tracking-tight !text-white sm:text-5xl lg:text-6xl xl:text-7xl">
                 المعرفة لا تعرف
-                <span className="block">الحدود.</span>
+                <span className="block !text-white">الحدود.</span>
 
                 <span className="mt-3 block bg-gradient-to-l from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent">
                   شاركها... تكبر.
@@ -755,7 +774,7 @@ export default function HomePage() {
               YOUR NEXT CHAPTER STARTS HERE
             </p>
 
-            <h2 className="mt-4 text-3xl font-black leading-tight sm:text-5xl">
+            <h2 className="mt-4 text-3xl font-black leading-tight !text-white sm:text-5xl">
               لا تنتظر أن يتغير المستقبل.
               <span className="mt-2 block bg-gradient-to-l from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent">
                 كن جزءاً من صناعته.
@@ -815,6 +834,22 @@ export default function HomePage() {
               <h3 className="font-black text-slate-800">اكتشف UniShare</h3>
 
               <div className="mt-5 flex flex-col items-center gap-3 text-sm text-slate-500 md:items-start">
+                <button
+                  type="button"
+                  onClick={() => navigate("/about")}
+                  className="transition hover:text-blue-600"
+                >
+                  من نحن
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/volunteer")}
+                  className="transition hover:text-blue-600"
+                >
+                  انضم إلينا
+                </button>
+
                 <button
                   type="button"
                   onClick={() => navigate("/universities")}
